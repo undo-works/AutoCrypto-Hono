@@ -1,0 +1,22 @@
+CREATE TABLE `transactions` (
+  `transaction_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `market_id` int unsigned NOT NULL,
+  `currency_id` int unsigned NOT NULL,
+  `transaction_type` enum('BUY','SELL') NOT NULL,
+  `transaction_datetime` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  `quantity` decimal(30,10) NOT NULL,
+  `price_per_unit` decimal(30,10) NOT NULL,
+  `total_amount` decimal(30,10) NOT NULL,
+  `fee` decimal(30,10) DEFAULT '0.0000000000',
+  `fee_currency_id` int unsigned DEFAULT NULL,
+  `active_flag` tinyint(1) NOT NULL DEFAULT '1',
+  `offer_id` varchar(255) DEFAULT NULL,
+  `notes` text,
+  PRIMARY KEY (`transaction_id`),
+  KEY `market_id` (`market_id`),
+  KEY `currency_id` (`currency_id`),
+  KEY `fee_currency_id` (`fee_currency_id`),
+  CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`market_id`) REFERENCES `markets` (`market_id`),
+  CONSTRAINT `transactions_ibfk_2` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`currency_id`),
+  CONSTRAINT `transactions_ibfk_3` FOREIGN KEY (`fee_currency_id`) REFERENCES `currencies` (`currency_id`)
+)

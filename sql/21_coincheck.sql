@@ -1,0 +1,30 @@
+INSERT 
+INTO Markets(market_name) 
+VALUES ("coincheck"); 
+
+INSERT 
+INTO `currencies` (`symbol`, `name`, `description`) 
+VALUES ('btc', NULL, NULL)
+, ('eth', NULL, NULL)
+, ('etc', NULL, NULL)
+, ('lsk', NULL, NULL)
+, ('xrp', NULL, NULL)
+, ('xem', NULL, NULL)
+, ('bch', NULL, NULL)
+, ('mona', NULL, NULL)
+, ('iost', NULL, NULL)
+, ('enj', NULL, NULL)
+, ('chz', NULL, NULL)
+, ('imx', NULL, NULL)
+, ('shib', NULL, NULL)
+, ('avax', NULL, NULL)
+, ('fnct', NULL, NULL)
+, ('dai', NULL, NULL)
+, ('wbtc', NULL, NULL)
+, ('bril', NULL, NULL)
+, ('bc', NULL, NULL)
+, ('doge', NULL, NULL)
+, ('pepe', NULL, NULL)
+, ('mask', NULL, NULL)
+, ('mana', NULL, NULL)
+, ('grt', NULL, NULL); 

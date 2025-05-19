@@ -21,9 +21,6 @@ export class MarketCurrenciesRepository {
          ON DUPLICATE KEY UPDATE cross_status = VALUES(cross_status);`,
         [marketId, currencyId, crossStatus]
       );
-      if (result.affectedRows !== 1) {
-        throw new Error("価格履歴の追加に失敗しました");
-      }
     } catch (err) {
       console.log(err);
       throw new Error("価格履歴の追加に失敗しました");

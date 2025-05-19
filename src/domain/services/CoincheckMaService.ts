@@ -75,8 +75,8 @@ export class CoincheckMaService extends MaService {
         });
         // 売却量を計算
         const amount = await this.calculateSellAmount(currency.symbol);
-        if (amount < 0.01) {
-          // 売却量が0.01未満の場合スルー
+        if (amount === 0) {
+        // 売却量が0場合スルー
           return;
         }
         // 売却
@@ -145,13 +145,7 @@ export class CoincheckMaService extends MaService {
   private async calculateSellAmount(coinType: CoinType): Promise<number> {
     /** 現在保持しているETHの合計 */
     const coinBalance = await this.client.getCoinBalance(coinType);
-    if (coinBalance < 0.01) {
-      // 0.01未満の場合はエラーにする
-      return 0;
-    } else {
-      // 購入量が0.01以上の場合はそのまま返す
-      return coinBalance;
-    }
+    return coinBalance;
   }
 
   private tradeConfig: CoincheckTradeConfig[] = [

@@ -48,7 +48,7 @@ export class MarketPricesRepository {
         `SELECT price
          FROM MarketPrices
          WHERE market_id = ? AND currency_id = ?
-         ORDER BY market_id DESC
+         ORDER BY price_id DESC
          LIMIT ?;`,
         [marketId, currencyId, limit]
       );

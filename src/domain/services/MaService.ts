@@ -34,7 +34,7 @@ export class MaService {
 
   // リスク管理パラメータ
   /** 1トレードの許容リスク */
-  protected readonly RISK_PERCENT = 10;
+  protected readonly RISK_PERCENT = 20;
   /** ストップロス幅 */
   private readonly STOP_LOSS_PCT = 5;
   private readonly TAKE_PROFIT_PCT = 15; // 利確幅
@@ -53,6 +53,7 @@ export class MaService {
   // 移動平均計算メソッド
   protected calculateMA(period: number, prices: number[]): number {
     // 直近N期間の終値平均を計算
-    return prices.slice(-period).reduce((sum, price) => sum + price, 0) / period;
+    // ASCの順番の時は-period、DESCの順番の時はperiod
+    return prices.slice(0, period).reduce((sum, price) => sum + price, 0) / period;
   }
 }

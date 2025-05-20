@@ -35,7 +35,7 @@ export class CoincheckRetryTradeService {
         const pairWithoutJpy = order.pair.replace(/_jpy$/i, '');
         const currentPrice = await this.client.getCurrentPrice(pairWithoutJpy as CoinType);
         if (order.rate == currentPrice) {
-          console.log(`現在価格と注文価格が一致しているため、再トレードを実行しません: ${order.created_at}　現在価格: ${currentPrice}　注文価格: ${order.rate}`);
+          console.log(`現在価格と注文価格が一致しているため、再トレードを実行しません。コイン：${order.pair}|${order.order_type}、注文日時： ${order.created_at}、現在価格: ${currentPrice}、注文時価: ${order.rate}`);
           continue;
         }
         // まずは注文をキャンセル

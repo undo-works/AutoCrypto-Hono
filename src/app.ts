@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 
-import { AutoTradeUseCase } from './application/coincheck/AutoTradeUseCase'
+import { AutoTradeUseCase } from './application/AutoTradeUseCase'
 
 /** Honoインスタンス */
 const app = new Hono()

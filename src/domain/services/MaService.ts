@@ -29,12 +29,12 @@ export class MaService {
   public coinName: CoinType;
 
   // 移動平均期間の設定（短期25期間、長期125期間）
-  protected readonly SHORT_TERM = 25;
-  protected readonly LONG_TERM = 125;
+  // protected readonly SHORT_TERM = 25;
+  // protected readonly LONG_TERM = 125;
 
   // リスク管理パラメータ
   /** 1トレードの許容リスク */
-  protected readonly RISK_PERCENT = 20;
+  // protected readonly RISK_PERCENT = 20;
   /** ストップロス幅 */
   private readonly STOP_LOSS_PCT = 5;
   private readonly TAKE_PROFIT_PCT = 15; // 利確幅

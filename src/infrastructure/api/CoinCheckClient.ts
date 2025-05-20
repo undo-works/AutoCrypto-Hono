@@ -109,6 +109,7 @@ export class CoinCheckClient {
 
   // 注文作成（取引所方式）
   async createOrder(params: OrderParams): Promise<ExchangeOrderResponse> {
+    console.log(`注文作成: ${params.pair} ${params.order_type} ${params.amount} ${params.rate}`);
     return this.request<ExchangeOrderResponse>('POST', '/exchange/orders', params);
   }
 

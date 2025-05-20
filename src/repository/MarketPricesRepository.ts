@@ -44,7 +44,7 @@ export class MarketPricesRepository {
     limit: number
   ): Promise<number[]> {
     try {
-      const rows = await query<{price: number}[]>(
+      const rows = await query<{ price: number }[]>(
         `SELECT price
          FROM MarketPrices
          WHERE market_id = ? AND currency_id = ?
@@ -53,6 +53,31 @@ export class MarketPricesRepository {
         [marketId, currencyId, limit]
       );
       return rows.map(row => Number(row.price));
+    } catch (err) {
+      console.log(err);
+      throw new Error("価格履歴の取得に失敗しました");
+    }
+  }
+
+  /**
+ * 最新のデータから指定件数の価格履歴を取得(移動平均求めたりで使う)
+ * @param marketId マーケットID
+ * @param currencyId 通貨ID
+ * @param limit 取得件数
+ * @returns 価格履歴の配列
+ */
+  async fetchPriceData(
+    marketId: number,
+    currencyId: number,
+  ): Promise<number[]> {
+    try {
+      const rows = await query<{ price: number }[]>(
+        `SELECT price FROM marketprices
+         WHERE market_id = ? AND currency_id = ?
+         ORDER BY record_datetime ASC`,
+        [marketId, currencyId] // 必要に応じてIDを変更
+      );
+      return rows.map((row) => Number(row.price));
     } catch (err) {
       console.log(err);
       throw new Error("価格履歴の取得に失敗しました");

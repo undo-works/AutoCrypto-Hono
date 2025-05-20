@@ -18,6 +18,9 @@ export class CoincheckMaService extends MaService {
    */
   async execute(marketId: number, currency: CurrenciesEntity): Promise<void> {
 
+    // 市場銘柄情報の取得
+    const marketCurrencies = await this.marketCurrenciesRepository.selectMarketCurrency(marketId, currency?.currency_id);
+
     // コインの現在の価格を取得
     const currentPrice = await this.client.getCurrentPrice(currency.symbol as CoinType);
 
@@ -25,15 +28,13 @@ export class CoincheckMaService extends MaService {
     await this.marketPriceRepository.insertMarketPrice(marketId, currency?.currency_id, currentPrice);
 
     // 過去の価格を取得
-    const marketPrices = await this.marketPriceRepository.selectPriceLatest(marketId, currency?.currency_id, this.LONG_TERM + 1);
-
-    console.log(`CoincheckMaServiceクラス → コイン種類: ${currency.symbol}、現在の価格: ${currentPrice}`);
+    const marketPrices = await this.marketPriceRepository.selectPriceLatest(marketId, currency?.currency_id, marketCurrencies.long_term + 1);
 
     // 長期移動平均の計算に必要なデータが溜まったら処理開始
-    if (marketPrices.length > this.LONG_TERM) {
+    if (marketPrices.length > marketCurrencies.long_term) {
       // 移動平均計算
-      const shortMA = this.calculateMA(this.SHORT_TERM, marketPrices);
-      const longMA = this.calculateMA(this.LONG_TERM, marketPrices);
+      const shortMA = this.calculateMA(marketCurrencies.short_term, marketPrices);
+      const longMA = this.calculateMA(marketCurrencies.long_term, marketPrices);
 
       const crossStatus = await this.marketCurrenciesRepository.selectCrossStatus(marketId, currency?.currency_id);
 
@@ -42,7 +43,7 @@ export class CoincheckMaService extends MaService {
         // ゴールデンクロスの状態に変更
         await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "golden");
         // 購入量を計算
-        const amount = await this.calculateBuyAmount(currentPrice, currency.symbol);
+        const amount = await this.calculateBuyAmount(currentPrice, currency.symbol, Number(marketCurrencies.percent));
         // 購入
         const orderResult = await this.client.createOrder({
           rate: currentPrice,
@@ -98,7 +99,7 @@ export class CoincheckMaService extends MaService {
         )
       } else {
         // 移動平均線が交差していない場合は何もしない
-        console.log(`MovingAverageStrategyクラス → 現在の価格: ${currentPrice}、短期MA：${shortMA}、長期MA：${longMA} - 交差なし`);
+        console.log(`CoincheckMaServiceクラス → コイン種類: ${currency.symbol}|${crossStatus} 現在の価格: ${currentPrice}、短期MA：${shortMA}、長期MA：${longMA} - 交差なし`);
       }
     }
   }
@@ -109,11 +110,11 @@ export class CoincheckMaService extends MaService {
    * @param currentPrice 
    * @returns 
    */
-  private async calculateBuyAmount(currentPrice: number, coinType: CoinType): Promise<number> {
+  private async calculateBuyAmount(currentPrice: number, coinType: CoinType, percent: number): Promise<number> {
     /** 現在保持している円の合計 */
     const yenBalance = await this.client.getYenBalance();
     // リスクを加味して現在所持する円のうち[RISK_PERSENT]%分の円を使う
-    const riskInvestYen = yenBalance * this.RISK_PERCENT / 100;
+    const riskInvestYen = yenBalance * percent / 100;
     const config = this.tradeConfig.find(config => config.coinType === coinType);
     if (!config) {
       throw new Error(`tradeConfigが見つかりません: ${coinType}`);

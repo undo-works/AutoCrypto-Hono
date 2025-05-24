@@ -39,9 +39,16 @@ export class CoincheckMaService extends MaService {
       const crossStatus = await this.marketCurrenciesRepository.selectCrossStatus(marketId, currency?.currency_id);
 
       // ゴールデンクロス（短期MAが長期MAを上抜き）
-      if (shortMA > longMA && currentPrice > shortMA && crossStatus !== "golden") {
+      if (shortMA > longMA && currentPrice >= shortMA && crossStatus !== "golden") {
         // ゴールデンクロスの状態に変更
         await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "golden");
+        // すでに買ってたらスルー
+        const openOrders = await this.client.getOpenOrders();
+        const sellingOrder = openOrders.orders.filter(order => order.pair === currency.symbol && order.order_type == "buy")
+        if (sellingOrder.length > 0) {
+          console.log(`CoincheckMaServiceクラス → コイン種類: ${currency.symbol}はすでに買っているのでスルー`);
+          return;
+        }
         // 購入量を計算
         const amount = await this.calculateBuyAmount(currentPrice, currency.symbol, Number(marketCurrencies.percent));
         // 購入
@@ -63,7 +70,7 @@ export class CoincheckMaService extends MaService {
         )
       }
       // デッドクロス（短期MAが長期MAを下抜き）
-      else if (shortMA < longMA && currentPrice < shortMA && crossStatus !== "dead") {
+      else if (shortMA < longMA && currentPrice <= shortMA && crossStatus !== "dead") {
         // デッドクロスの状態に変更
         await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "dead");
         // 注文をキャンセル

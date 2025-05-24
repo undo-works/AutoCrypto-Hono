@@ -62,7 +62,8 @@ export class MarketCurrenciesRepository {
             t.market_id
             , t.currency_id
     ) AS ratios 
-        ON mc.market_id = ratios.market_id 
+        ON mc.active_flag = 1
+        AND mc.market_id = ratios.market_id
         AND mc.currency_id = ratios.currency_id 
 SET
     mc.percent = CASE 
@@ -86,7 +87,8 @@ SET
     try {
       const rows = await query<MarketCurrenciesEntity[]>(
         `SELECT *
-         FROM MarketCurrencies;`,
+         FROM MarketCurrencies
+         WHERE active_flag = 1;`,
         []
       );
       return rows;
@@ -110,7 +112,7 @@ SET
       const rows = await query<MarketCurrenciesEntity[]>(
         `SELECT *
          FROM MarketCurrencies
-         WHERE market_id = ? AND currency_id = ?;`,
+         WHERE active_flag = 1 AND market_id = ? AND currency_id = ?;`,
         [marketId, currencyId]
       );
       return rows[0];
@@ -134,7 +136,7 @@ SET
       const rows = await query<{ cross_status: "string" | null}[]>(
         `SELECT cross_status
          FROM MarketCurrencies
-         WHERE market_id = ? AND currency_id = ?;`,
+         WHERE active_flag = 1 AND market_id = ? AND currency_id = ?;`,
         [marketId, currencyId]
       );
       return rows.length > 0 ? rows[0].cross_status as "golden" | "dead" | null : null;
@@ -161,7 +163,7 @@ SET
       await query<ResultSetHeader>(
         `UPDATE MarketCurrencies
          SET short_term = ?, long_term = ?
-         WHERE market_id = ? AND currency_id = ?;`,
+         WHERE active_flag = 1 AND market_id = ? AND currency_id = ?;`,
         [shortTerm, longTerm, marketId, currencyId]
       );
     } catch (err) {

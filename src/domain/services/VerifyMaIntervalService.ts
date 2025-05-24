@@ -107,8 +107,8 @@ export class VerifyMaIntervalService {
         let bestLongWindow: number | null = null;
 
         // 探索する短期・長期ウィンドウの候補を生成
-        const shortWindows = Array.from({ length: 50 }, (_, i) => (i + 1)); // 1,2,...,50
-        const longWindows = Array.from({ length: 70 }, (_, i) => (i + 6) * 5);  // 5,10,...,350
+        const shortWindows = Array.from({ length: 40 }, (_, i) => (i + 1)); // 1,2,...,50
+        const longWindows = Array.from({ length: 50 }, (_, i) => (i + 6) * 5);  // 5,10,...,250
 
         // 全組み合わせでシミュレーションし、最大利益となる組み合わせを探索
         for (const shortWindow of shortWindows) {

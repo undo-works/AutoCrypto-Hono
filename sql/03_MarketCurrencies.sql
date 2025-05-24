@@ -6,6 +6,7 @@ CREATE TABLE `marketcurrencies` (
   `percent` decimal(5,2) NOT NULL DEFAULT '20.00',
   `short_term` int unsigned NOT NULL DEFAULT '25',
   `long_term` int unsigned NOT NULL DEFAULT '125',
+  `active_flag` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`market_currency_id`),
   UNIQUE KEY `unique_market_currency` (`market_id`,`currency_id`),
   KEY `currency_id` (`currency_id`),

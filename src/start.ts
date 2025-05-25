@@ -11,7 +11,7 @@ cron.schedule('*/1 * * * *', async () => {
   timezone: 'Asia/Tokyo'
 });
 
-cron.schedule('0 18 * * *', async () => {
+cron.schedule('0 22 * * *', async () => {
   await updateTradeConfigUseCase.execute();
 }, {
   timezone: 'Asia/Tokyo'

@@ -1,4 +1,4 @@
-export type CoinType =
+export type CoincheckCoinType =
   | "btc"
   | "eth"
   | "etc"
@@ -23,3 +23,5 @@ export type CoinType =
   | "mask"
   | "mana"
   | "grt";
+
+export type BinanceCoinType = "BNBBTC" | "BNBETH" | "BNBJPY";

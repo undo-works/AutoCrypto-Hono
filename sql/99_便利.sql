@@ -46,6 +46,8 @@ FROM
     transactions t 
     INNER JOIN currencies c 
         ON t.currency_id = c.currency_id 
+WHERE
+    transaction_datetime > "2025-05-22 22:36" 
 GROUP BY
     t.market_id
     , t.currency_id 
@@ -56,6 +58,17 @@ ORDER BY
 ALTER TABLE `marketcurrencies` ADD COLUMN `long_term` int unsigned NOT NULL DEFAULT 125; 
 
 ALTER TABLE `transactions` DROP COLUMN `percent`; 
+
+ALTER TABLE `marketcurrencies` ADD COLUMN `active_flag` tinyint(1) NOT NULL DEFAULT '1'; 
+
+SELECT
+    * 
+FROM
+    MarketCurrencies 
+WHERE
+    active_flag = 1 
+    AND market_id = 1 
+    AND currency_id = 1; 
 
 -- リスクパーセントを更新
 UPDATE marketcurrencies mc 
@@ -92,4 +105,19 @@ SET
         WHEN ratios.sell_to_buy_quantity_ratio IS NULL 
             THEN 20 
         ELSE mc.percent * ratios.sell_to_buy_quantity_ratio 
-        END;
+        END; 
+
+-- 売却・購入の取引結果確認
+select
+    t.currency_id
+    , t.transaction_type
+    , SUM(t.quantity * t.price_per_unit) 
+    , COUNT(t.transaction_type)
+from
+    transactions t 
+WHERE
+    t.transaction_datetime > "2025-05-23 23:13" 
+    and t.transaction_datetime < "2025-05-24 8:55" 
+    and currency_id = 2
+GROUP BY
+    t.currency_id, t.transaction_type;

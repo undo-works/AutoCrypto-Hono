@@ -1,7 +1,7 @@
-import { CoinType } from "../../infrastructure/api/types/CoinTypes";
+import { CoincheckCoinType } from "../../infrastructure/api/types/CoinTypes";
 
 export interface CoincheckTradeConfig {
-  coinType: CoinType;
+  coinType: CoincheckCoinType;
   minimunTradeAmount: number;
   /**
    * 取引可能な小数点以下の桁数

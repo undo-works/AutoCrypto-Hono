@@ -1,5 +1,5 @@
 import { CoinCheckClient } from "../../infrastructure/api/CoinCheckClient";
-import { CoinType } from "../../infrastructure/api/types/CoinTypes";
+import { CoincheckCoinType } from "../../infrastructure/api/types/CoinTypes";
 import { MaService } from "./MaService";
 
 
@@ -33,7 +33,7 @@ export class CoincheckRetryTradeService {
       try {
         // 現在の価格を取得
         const pairWithoutJpy = order.pair.replace(/_jpy$/i, '');
-        const currentPrice = await this.client.getCurrentPrice(pairWithoutJpy as CoinType);
+        const currentPrice = await this.client.getCurrentPrice(pairWithoutJpy as CoincheckCoinType);
         if (order.rate == currentPrice) {
           console.log(`現在価格と注文価格が一致しているため、再トレードを実行しません。コイン：${order.pair}|${order.order_type}、注文日時： ${order.created_at}、現在価格: ${currentPrice}、注文時価: ${order.rate}`);
           continue;
@@ -47,7 +47,7 @@ export class CoincheckRetryTradeService {
         // 注文キャンセル後、1秒待機
         await new Promise(resolve => setTimeout(resolve, 1000));
         // 現在の所持コイン量を取得
-        const amount = await this.client.getCoinBalance(pairWithoutJpy as CoinType);
+        const amount = await this.client.getCoinBalance(pairWithoutJpy as CoincheckCoinType);
         // 再トレードを実行
         await this.client.createOrder({
           rate: currentPrice,

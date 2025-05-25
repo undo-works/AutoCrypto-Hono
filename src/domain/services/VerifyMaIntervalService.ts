@@ -61,7 +61,7 @@ export class VerifyMaIntervalService {
         const signal: number[] = Array(data.length).fill(0);
         for (let i = shortWindow; i < data.length; i++) {
             // ゴールデンクロス（買いシグナル）
-            if (shortMa[i] > longMa[i] && shortMa[i - 1] <= longMa[i - 1]) {
+            if (shortMa[i] > longMa[i] && shortMa[i - 1] <= longMa[i - 1] && data[i] > data[i - 1] && data[i - 1] > data[i - 2]) {
                 signal[i] = 1;
             // デッドクロス（売りシグナル）
             } else if (shortMa[i] < longMa[i] && shortMa[i - 1] >= longMa[i - 1]) {

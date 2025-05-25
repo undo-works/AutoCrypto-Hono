@@ -4,7 +4,7 @@ import { EthPriceEntity } from './types/coincheck/CoinPriceResponse';
 import { BalanceEntity } from './types/coincheck/BalanceEntity';
 import { OpenOrdersEntity } from './types/coincheck/OpenOrdersEntity';
 import { DeleteOpenOrderResponse } from './types/coincheck/DeleteOpenOrderResponse';
-import { CoinType } from './types/CoinTypes';
+import { CoincheckCoinType } from './types/CoinTypes';
 import { ExchangeOrderResponse } from './types/coincheck/ExchangeOrderResponse';
 
 type OrderType = 'buy' | 'sell';
@@ -102,7 +102,7 @@ export class CoinCheckClient {
    * @param coinType コインの種類
    * @returns 
    */
-  async getCurrentPrice(coinType: CoinType): Promise<number> {
+  async getCurrentPrice(coinType: CoincheckCoinType): Promise<number> {
     const ticker = await this.request<EthPriceEntity>('GET', `/ticker?pair=${coinType}_jpy`);
     return ticker.last;
   }
@@ -132,7 +132,7 @@ export class CoinCheckClient {
    * コインの残高取得
    * @returns 残高情報
    */
-  async getCoinBalance(coinType: CoinType): Promise<number> {
+  async getCoinBalance(coinType: CoincheckCoinType): Promise<number> {
     const balance = await this.request<BalanceEntity>('GET', '/accounts/balance');
     // コインの量を返す
     return Number(balance[coinType]);

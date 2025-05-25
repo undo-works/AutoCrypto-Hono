@@ -1,4 +1,4 @@
-import { CoinType } from "../infrastructure/api/types/CoinTypes";
+import { BinanceCoinType, CoincheckCoinType } from "../infrastructure/api/types/CoinTypes";
 
 /**
  * Represents a currency entity.
@@ -11,7 +11,7 @@ import { CoinType } from "../infrastructure/api/types/CoinTypes";
  */
 export interface CurrenciesEntity {
   currency_id: number;
-  symbol: CoinType;
+  symbol: CoincheckCoinType | BinanceCoinType;
   name: string;
   description?: string | null;
 }

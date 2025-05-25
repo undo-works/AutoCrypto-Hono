@@ -99,6 +99,25 @@ SET
   }
 
   /**
+   * 全件の取得
+   * @returns 市場銘柄情報一覧
+   */
+  async selectByMarketId(marketId: number): Promise<MarketCurrenciesEntity[]> {
+    try {
+      const rows = await query<MarketCurrenciesEntity[]>(
+        `SELECT *
+         FROM MarketCurrencies
+         WHERE active_flag = 1 AND market_id = ?;`,
+        [marketId]
+      );
+      return rows;
+    } catch (err) {
+      console.log(err);
+      throw new Error("市場銘柄の取得に失敗しました");
+    }
+  }
+
+  /**
    * 市場銘柄情報を一件取得
    * @param marketId マーケットID
    * @param currencyId 通貨ID
@@ -115,6 +134,9 @@ SET
          WHERE active_flag = 1 AND market_id = ? AND currency_id = ?;`,
         [marketId, currencyId]
       );
+      if (rows.length === 0) {
+        throw new Error("指定された市場銘柄が存在しません");
+      }
       return rows[0];
     } catch (err) {
       console.log(err);

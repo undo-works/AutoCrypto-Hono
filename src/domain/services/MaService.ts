@@ -1,7 +1,7 @@
 import { COIN_TYPES } from "../../constants";
 import { CurrenciesEntity } from "../../entity/CurrenciesEntity";
 import { CoinCheckClient } from "../../infrastructure/api/CoinCheckClient";
-import { CoinType } from "../../infrastructure/api/types/CoinTypes";
+import { BinanceCoinType, CoincheckCoinType } from "../../infrastructure/api/types/CoinTypes";
 import { CurrenciesRepository } from "../../repository/CurrenciesRepository";
 import { MarketPricesRepository } from "../../repository/MarketPricesRepository";
 import * as dotenv from "dotenv";
@@ -26,7 +26,7 @@ export class MaService {
   protected marketCurrenciesRepository: MarketCurrenciesRepository;
 
   // コイン名
-  public coinName: CoinType;
+  public coinName: CoincheckCoinType | BinanceCoinType;
 
   // 移動平均期間の設定（短期25期間、長期125期間）
   // protected readonly SHORT_TERM = 25;
@@ -39,7 +39,7 @@ export class MaService {
   private readonly STOP_LOSS_PCT = 5;
   private readonly TAKE_PROFIT_PCT = 15; // 利確幅
 
-  constructor(coinName: CoinType) {
+  constructor(coinName: CoincheckCoinType | BinanceCoinType) {
     this.coinName = coinName;
     this.client = new CoinCheckClient(
       process.env.COINCHECK_ACCESS_KEY!,

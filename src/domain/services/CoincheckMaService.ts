@@ -1,5 +1,5 @@
 import { CurrenciesEntity } from "../../entity/CurrenciesEntity";
-import { CoinType } from "../../infrastructure/api/types/CoinTypes";
+import { CoincheckCoinType } from "../../infrastructure/api/types/CoinTypes";
 import * as dotenv from "dotenv";
 import { MaService } from "./MaService";
 import { CoincheckTradeConfig } from "../types/CoincheckTradeConfig";
@@ -22,7 +22,7 @@ export class CoincheckMaService extends MaService {
     const marketCurrencies = await this.marketCurrenciesRepository.selectMarketCurrency(marketId, currency?.currency_id);
 
     // コインの現在の価格を取得
-    const currentPrice = await this.client.getCurrentPrice(currency.symbol as CoinType);
+    const currentPrice = await this.client.getCurrentPrice(currency.symbol as CoincheckCoinType);
 
     // 価格を登録
     await this.marketPriceRepository.insertMarketPrice(marketId, currency?.currency_id, currentPrice);
@@ -38,8 +38,7 @@ export class CoincheckMaService extends MaService {
 
       const crossStatus = await this.marketCurrenciesRepository.selectCrossStatus(marketId, currency?.currency_id);
 
-      // ゴールデンクロス（短期MAが長期MAを上抜き）
-      if (shortMA > longMA && currentPrice >= shortMA && crossStatus !== "golden") {
+      if (shortMA > longMA && currentPrice >= shortMA && marketPrices[0] > marketPrices[1] && marketPrices[1] > marketPrices[2] && crossStatus !== "golden") {
         // ゴールデンクロスの状態に変更
         await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "golden");
         // すでに買ってたらスルー
@@ -50,7 +49,7 @@ export class CoincheckMaService extends MaService {
           return;
         }
         // 購入量を計算
-        const amount = await this.calculateBuyAmount(currentPrice, currency.symbol, Number(marketCurrencies.percent));
+        const amount = await this.calculateBuyAmount(currentPrice, currency.symbol as CoincheckCoinType, Number(marketCurrencies.percent));
         // 購入
         const orderResult = await this.client.createOrder({
           rate: currentPrice,
@@ -82,7 +81,7 @@ export class CoincheckMaService extends MaService {
           await this.transactionsRepository.updateActiveFlag(order.id, 0);
         });
         // 売却量を計算
-        const amount = await this.calculateSellAmount(currency.symbol);
+        const amount = await this.calculateSellAmount(currency.symbol as CoincheckCoinType);
         if (amount === 0) {
         // 売却量が0場合スルー
           return;
@@ -117,7 +116,7 @@ export class CoincheckMaService extends MaService {
    * @param currentPrice 
    * @returns 
    */
-  private async calculateBuyAmount(currentPrice: number, coinType: CoinType, percent: number): Promise<number> {
+  private async calculateBuyAmount(currentPrice: number, coinType: CoincheckCoinType, percent: number): Promise<number> {
     /** 現在保持している円の合計 */
     const yenBalance = await this.client.getYenBalance();
     // リスクを加味して現在所持する円のうち[RISK_PERSENT]%分の円を使う
@@ -150,7 +149,7 @@ export class CoincheckMaService extends MaService {
    * @param currentPrice 
    * @returns 
    */
-  private async calculateSellAmount(coinType: CoinType): Promise<number> {
+  private async calculateSellAmount(coinType: CoincheckCoinType): Promise<number> {
     /** 現在保持しているETHの合計 */
     const coinBalance = await this.client.getCoinBalance(coinType);
     return coinBalance;

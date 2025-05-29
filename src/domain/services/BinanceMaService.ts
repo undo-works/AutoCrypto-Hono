@@ -44,7 +44,7 @@ export class BinanceMaService extends MaService {
       const crossStatus = await this.marketCurrenciesRepository.selectCrossStatus(marketId, currency?.currency_id);
 
       // ゴールデンクロス（短期MAが長期MAを上抜き）
-      if (shortMA > longMA && currentPrice >= shortMA && crossStatus !== "golden") {
+      if (shortMA > longMA && currentPrice >= shortMA && marketPrices[0] > marketPrices[1] && marketPrices[1] > marketPrices[2] && crossStatus !== "golden") {
         // ゴールデンクロスの状態に変更
         await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "golden");
         // すでに買ってたらスルー

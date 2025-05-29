@@ -21,6 +21,8 @@ export class MaService {
   // 市場価格のリポジトリ
   protected marketPriceRepository: MarketPricesRepository;
   // 銘柄情報のリポジトリ
+  protected currencyRepository: CurrenciesRepository;
+  // 銘柄情報のリポジトリ
   protected transactionsRepository: TransactionsRepository;
   // 市場ごとの銘柄情報のリポジトリ
   protected marketCurrenciesRepository: MarketCurrenciesRepository;
@@ -46,6 +48,7 @@ export class MaService {
       process.env.COINCHECK_SECRET_ACCESS_KEY!
     );
     this.marketPriceRepository = new MarketPricesRepository();
+    this.currencyRepository = new CurrenciesRepository();
     this.transactionsRepository = new TransactionsRepository();
     this.marketCurrenciesRepository = new MarketCurrenciesRepository();
   }

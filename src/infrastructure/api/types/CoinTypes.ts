@@ -24,4 +24,4 @@ export type CoincheckCoinType =
   | "mana"
   | "grt";
 
-export type BinanceCoinType = "BNBBTC" | "BNBETH" | "BNBJPY";
+export type BinanceCoinType = "BNBBTC" | "BNBETH" | "BNBJPY" | "ETHBTC" | "ETHJPY" | "BTCJPY";

@@ -7,11 +7,11 @@ export interface BinanceOpenOrderResponse {
   cumQuote: string;
   executedQty: string;
   orderId: number;
-  origQty: string;
+  origQty: number;
   origType: string;
-  price: string;
+  price: number;
   reduceOnly: boolean;
-  side: string;
+  side: "BUY" | "SELL";
   positionSide: string;
   status: string;
   stopPrice: string;

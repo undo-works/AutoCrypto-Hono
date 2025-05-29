@@ -3,6 +3,7 @@ import axios from 'axios';
 import * as crypto from 'crypto';
 import { BinanceOpenOrderResponse } from './types/binance/BinanceOpenOrderResponse';
 import { BinanceAccountResponse } from './types/binance/BinanceAccountResponse';
+import { BinanceCoinType } from './types/CoinTypes';
 
 
 
@@ -35,6 +36,16 @@ export class BinanceClient {
       throw new Error(`現在価格の取得に失敗しました: ${symbol}`);
     }
     return parseFloat(ticker.price);
+  }
+
+  /**
+   * 現在価格の取得
+   * @param symbol 
+   * @returns 
+   */
+  async getAllCurrentPrice(): Promise<{ symbol: BinanceCoinType | string, price: number }[]> {
+    const res = await this.axiosInstance.get<{ symbol: string, price: number }[]>(`/api/v3/ticker/price`);
+    return res.data;
   }
 
   /**
@@ -76,10 +87,10 @@ export class BinanceClient {
 
 
   /** 未約定注文一覧 */
-  async getOpenOrders(symbol: string): Promise<BinanceOpenOrderResponse[]> {
+  async getOpenOrders(): Promise<BinanceOpenOrderResponse[]> {
     const path = '/api/v3/openOrders';
     const timestamp = Date.now();
-    const params = `timestamp=${timestamp}&symbol=${symbol}`;
+    const params = `timestamp=${timestamp}`;
     const signature = crypto.createHmac('sha256', this.apiSecret).update(params).digest('hex');
 
     const res = await this.axiosInstance.get(
@@ -113,6 +124,48 @@ export class BinanceClient {
     if (!balance) {
       throw new Error(`${coinName}の残高が見つかりません`);
     }
-    return parseFloat(balance.free);
+    return balance.free;
+  }
+
+  /** すべてのコインの残高取得 */
+  async getAllCoinBalance(): Promise<BinanceAccountResponse> {
+    const path = '/api/v3/account';
+    const timestamp = Date.now();
+    const params = `timestamp=${timestamp}`;
+    const signature = crypto.createHmac('sha256', this.apiSecret).update(params).digest('hex');
+
+    const res = await this.axiosInstance.get<BinanceAccountResponse>(
+      `${path}?${params}&signature=${signature}`,
+      {
+        headers: {
+          'X-MBX-APIKEY': this.apiKey
+        }
+      }
+    );
+
+    return res.data;
+  }
+
+  /**
+   * 指定した注文をキャンセルする
+   * @param symbol 
+   * @param orderId 
+   * @returns 
+   */
+  async cancelOrder(symbol: string, orderId: number) {
+    const path = '/api/v3/order';
+    const timestamp = Date.now();
+    const params = `symbol=${symbol}&orderId=${orderId}&timestamp=${timestamp}`;
+    const signature = crypto.createHmac('sha256', this.apiSecret).update(params).digest('hex');
+
+    const res = await this.axiosInstance.delete(
+      `${path}?${params}&signature=${signature}`,
+      {
+        headers: {
+          'X-MBX-APIKEY': this.apiKey
+        }
+      }
+    );
+    return res.data;
   }
 }

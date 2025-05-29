@@ -82,7 +82,7 @@ export interface BinanceAccountResponse {
         /**
          * 利用可能残高（文字列）
          */
-        free: string;
+        free: number;
         /**
          * ロック中残高（文字列）
          */

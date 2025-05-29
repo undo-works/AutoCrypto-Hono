@@ -116,8 +116,8 @@ select
 from
     transactions t 
 WHERE
-    t.transaction_datetime > "2025-05-23 23:13" 
-    and t.transaction_datetime < "2025-05-24 8:55" 
-    and currency_id = 2
+    t.transaction_datetime > "2025-05-24 22:00" 
+    and t.transaction_datetime < "2025-05-25 22:00" 
+    and t.market_id = 2
 GROUP BY
     t.currency_id, t.transaction_type;

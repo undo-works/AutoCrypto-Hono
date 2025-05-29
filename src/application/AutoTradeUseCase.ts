@@ -20,7 +20,7 @@ export class AutoTradeUseCase {
   // コインチェックの取引実行サービス
   private coincheckMaServiceArray: CoincheckMaService[] = [];
   // バイナンスの取引実行サービス
-  private binanceMaServiceArray: BinanceMaService[] = [];
+  private binanceMaServiceArray: BinanceMaService;
 
   constructor() {
     this.marketsRepository = new MarketsRepository();
@@ -31,9 +31,7 @@ export class AutoTradeUseCase {
       this.coincheckMaServiceArray.push(new CoincheckMaService(coinType));
     })
 
-    BINANCE_COIN_TYPES.forEach((coinType) => {
-      this.binanceMaServiceArray.push(new BinanceMaService(coinType));
-    })
+    this.binanceMaServiceArray = new BinanceMaService();
   }
 
   /**
@@ -63,27 +61,14 @@ export class AutoTradeUseCase {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-
     // バイナンスの取引実行サービスのインスタンスを作成
-    // 銘柄情報の取得
-    const binanceCurrencies = await this.currencyRepository.selectAll();
-
-    // コインチェックの取引実行サービスのインスタンスを作成
-    const binanceMarketid = await this.marketsRepository.selectMarketIdByName(MARKETS.BINANCE);
-
-    // TODO: リトライ処理の実行
-
+    // const binanceMarketid = await this.marketsRepository.selectMarketIdByName(MARKETS.BINANCE);
     // サービスを順次実行
-    for (const binanceMaService of this.binanceMaServiceArray) {
-      try {
-        await binanceMaService.execute(
-          binanceMarketid,
-          binanceCurrencies.find((currency) => currency.symbol == binanceMaService.coinName)!
-        );
-      } catch (error) {
-        console.log(error);
-      }
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      // await this.binanceMaServiceArray.execute(binanceMarketid);
+    } catch (error) {
+      console.log(error);
     }
+
   }
 }

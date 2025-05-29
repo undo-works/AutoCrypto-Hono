@@ -40,4 +40,22 @@ export class CurrenciesRepository {
       throw new Error("銘柄名から情報を取得することができませんでした");
     }
   }
+
+  /**
+   * シンボルから情報を取得する
+   * @param symbol 銘柄シンボル
+   * @returns 銘柄一件
+   */
+  async selectBySymbol(symbol: string): Promise<CurrenciesEntity> {
+    try {
+      const results = await query<CurrenciesEntity[]>(
+        `SELECT * FROM currencies WHERE symbol = ?;`,
+        [symbol]
+      );
+      return results[0];
+    } catch (err) {
+      console.log(err);
+      throw new Error("シンボルから情報を取得することができませんでした");
+    }
+  }
 }

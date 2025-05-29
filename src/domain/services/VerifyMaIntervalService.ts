@@ -78,12 +78,12 @@ export class VerifyMaIntervalService {
                 // 全額で購入
                 const buyPrice = data[i];
                 const amountToBuy = balance / buyPrice;
-                holdings += amountToBuy;
+                holdings += amountToBuy * 0.999; // 手数料を考慮して0.1%減らす
                 balance = 0;
             } else if (signal[i] === -1) {
                 // 全量売却
                 const sellPrice = data[i];
-                balance += holdings * sellPrice;
+                balance += holdings * sellPrice * 0.999; // 手数料を考慮して0.1%減らす
                 holdings = 0;
             }
         }
@@ -108,7 +108,7 @@ export class VerifyMaIntervalService {
 
         // 探索する短期・長期ウィンドウの候補を生成
         const shortWindows = Array.from({ length: 40 }, (_, i) => (i + 1)); // 1,2,...,50
-        const longWindows = Array.from({ length: 50 }, (_, i) => (i + 6) * 5);  // 5,10,...,250
+        const longWindows = Array.from({ length: 60 }, (_, i) => (i + 6) * 6);  // 6,12,...,360
 
         // 全組み合わせでシミュレーションし、最大利益となる組み合わせを探索
         for (const shortWindow of shortWindows) {

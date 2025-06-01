@@ -24,4 +24,4 @@ export type CoincheckCoinType =
   | "mana"
   | "grt";
 
-export type BinanceCoinType = "BNBBTC" | "BNBETH" | "BNBJPY";
+export type BinanceCoinType = "BNBBTC" | "BNBETH" | "BNBJPY" | "ADABNB" | "SOLBNB" | "DOTBNB" | "TRXBNB" | "XRPBNB" | "AVAXBNB" | "SUIBNB" | "LTCBNB" | "HBARBNB" | "POLBNB" | "LINKBNB" | "BCHBNB" | "CHZBNB" | "ETCBNB" | "AXSBNB" | "SEIBNB" | "NEARBNB" | "CYBERBNB";

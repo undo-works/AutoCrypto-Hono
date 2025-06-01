@@ -3,6 +3,8 @@ import axios from 'axios';
 import * as crypto from 'crypto';
 import { BinanceOpenOrderResponse } from './types/binance/BinanceOpenOrderResponse';
 import { BinanceAccountResponse } from './types/binance/BinanceAccountResponse';
+import { Binance24hrTickerResponse } from './types/binance/Binance24hrTickerResponse';
+import { BinanceMyTradeResponse } from './types/binance/BinanceMyTradeResponse';
 
 
 
@@ -114,5 +116,38 @@ export class BinanceClient {
       throw new Error(`${coinName}の残高が見つかりません`);
     }
     return parseFloat(balance.free);
+  }
+
+  /**
+   * 指定した銘柄の24時間変動率(%)を取得
+   * @param symbol 
+   * @returns 
+   */
+  async get24hPriceChangePercent(symbol: string): Promise<Binance24hrTickerResponse> {
+    const res = await this.axiosInstance.get<Binance24hrTickerResponse>(`/api/v3/ticker/24hr?symbol=${symbol}`);
+    return res.data;
+  }
+
+  /**
+   * 指定した銘柄の直近の取引履歴を取得
+   * @param symbol 
+   * @param limit 取得件数（デフォルト: 1）
+   * @returns 
+   */
+  async getRecentTrades(symbol: string, limit: number = 1): Promise<BinanceMyTradeResponse[]> {
+    const path = '/api/v3/myTrades';
+    const timestamp = Date.now();
+    const params = `symbol=${symbol}&limit=${limit}&timestamp=${timestamp}`;
+    const signature = crypto.createHmac('sha256', this.apiSecret).update(params).digest('hex');
+
+    const res = await this.axiosInstance.get<BinanceMyTradeResponse[]>(
+      `${path}?${params}&signature=${signature}`,
+      {
+        headers: {
+          'X-MBX-APIKEY': this.apiKey
+        }
+      }
+    );
+    return res.data;
   }
 }

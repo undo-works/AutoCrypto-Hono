@@ -39,8 +39,6 @@ export class CoincheckMaService extends MaService {
       const crossStatus = await this.marketCurrenciesRepository.selectCrossStatus(marketId, currency?.currency_id);
 
       if (shortMA > longMA && currentPrice >= shortMA && marketPrices[0] > marketPrices[1] && marketPrices[1] > marketPrices[2] && crossStatus !== "golden") {
-        // ゴールデンクロスの状態に変更
-        await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "golden");
         // すでに買ってたらスルー
         const openOrders = await this.client.getOpenOrders();
         const sellingOrder = openOrders.orders.filter(order => order.pair === currency.symbol && order.order_type == "buy")
@@ -65,13 +63,13 @@ export class CoincheckMaService extends MaService {
           amount,
           currentPrice,
           currentPrice * amount,
-          orderResult.id.toString()
+          orderResult.id
         )
+        // ゴールデンクロスの状態に変更
+        await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "golden");
       }
       // デッドクロス（短期MAが長期MAを下抜き）
       else if (shortMA < longMA && currentPrice <= shortMA && crossStatus !== "dead") {
-        // デッドクロスの状態に変更
-        await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "dead");
         // 注文をキャンセル
         const openOrders = await this.client.getOpenOrders();
         openOrders.orders.filter(order => order.pair === currency.symbol).forEach(async (order) => {
@@ -101,8 +99,10 @@ export class CoincheckMaService extends MaService {
           amount,
           currentPrice,
           currentPrice * amount,
-          orderResult.id.toString()
+          orderResult.id
         )
+        // デッドクロスの状態に変更
+        await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "dead");
       } else {
         // 移動平均線が交差していない場合は何もしない
         console.log(`CoincheckMaServiceクラス → コイン種類: ${currency.symbol}|${crossStatus} 現在の価格: ${currentPrice}、短期MA：${shortMA}、長期MA：${longMA} - 交差なし`);

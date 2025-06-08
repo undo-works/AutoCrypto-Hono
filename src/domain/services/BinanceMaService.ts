@@ -1,3 +1,4 @@
+import { BINANCE_TRADE_CONFIG } from "../../constants";
 import { CurrenciesEntity } from "../../entity/CurrenciesEntity";
 import { MarketCurrenciesEntity } from "../../entity/MarketCurrenciesEntity";
 import { BinanceClient } from "../../infrastructure/api/BinanceClient";
@@ -25,7 +26,7 @@ export class BinanceMaService extends MaService {
     const marketPrice = await this.binanceClient.getCurrentPrice(currency.symbol);
 
     // コインの取引設定を取得
-    const config = this.tradeConfig.find(config => config.coinType == currency.symbol);
+    const config = BINANCE_TRADE_CONFIG.find(config => config.coinType == currency.symbol);
 
     if (config?.baseCoin === "BNB") {
       // BNBを基準にした取引を実行
@@ -100,7 +101,7 @@ export class BinanceMaService extends MaService {
         // 購入量を計算
         const { coinAmount, bnbAmount } = await this.calculateBuyAmountByBNB(currentPrice, Number(marketCurrency.percent));
         // coinAmountがconfigの条件内に収まるように調整
-        const config = this.tradeConfig.find(cfg => cfg.coinType === currency.symbol);
+        const config = BINANCE_TRADE_CONFIG.find(cfg => cfg.coinType === currency.symbol);
         if (!config) {
           console.error(`tradeConfigが見つかりません: ${currency.symbol}`);
           return;
@@ -239,7 +240,7 @@ export class BinanceMaService extends MaService {
         // 購入量を計算
         const { coinAmount, bnbAmount } = await this.calculateBuyAmountByBNB(marketPrice, Number(marketCurrency.percent));
         // coinAmountがconfigの条件内に収まるように調整
-        const config = this.tradeConfig.find(cfg => cfg.coinType === currency.symbol);
+        const config = BINANCE_TRADE_CONFIG.find(cfg => cfg.coinType === currency.symbol);
         if (!config) {
           console.error(`tradeConfigが見つかりません: ${currency.symbol}`);
           return;
@@ -299,7 +300,7 @@ export class BinanceMaService extends MaService {
         // 売却量を計算
         const { coinAmount, bnbAmount } = await this.calculateSellAmount(currency.symbol, marketPrice);
         // coinAmountがconfigの条件内に収まるように調整
-        const config = this.tradeConfig.find(cfg => cfg.coinType === currency.symbol);
+        const config = BINANCE_TRADE_CONFIG.find(cfg => cfg.coinType === currency.symbol);
         if (!config) {
           console.error(`tradeConfigが見つかりません: ${currency.symbol}`);
           return;
@@ -411,7 +412,7 @@ export class BinanceMaService extends MaService {
    */
   private async calculateSellAmount(coinType: string, currentPrice: number): Promise<{ coinAmount: number, bnbAmount: number }> {
     /**  */
-    const config = this.tradeConfig.find(config => config.coinType === coinType);
+    const config = BINANCE_TRADE_CONFIG.find(config => config.coinType === coinType);
     /** 現在保持しているコインの合計 */
     const coinBalance = await this.binanceClient.getCoinBalance(config?.tradeCoin! !== "BNB" ? config?.tradeCoin! : config?.baseCoin!);
 
@@ -419,198 +420,4 @@ export class BinanceMaService extends MaService {
 
     return { coinAmount: coinBalance, bnbAmount: bnbAmount }; // BNBを基準にしているので、売却するコインの量はコインの量*現在価格(bnb/coin)
   }
-
-  // 取引設定は以下で調べる
-  // https://api.binance.com/api/v3/exchangeInfo?symbol=BNBJPY
-  private tradeConfig: BinanceTradeConfig[] = [
-    {
-      coinType: "BNBBTC",
-      baseCoin: "BNB",
-      tradeCoin: "BTC",
-      minQty: 0.001,
-      maxQty: 1000,
-      stepSize: 0.001,
-      minNotional: 0.0001,
-    },
-    {
-      coinType: "BNBETH",
-      baseCoin: "BNB",
-      tradeCoin: "ETH",
-      minQty: 0.001,
-      maxQty: 9000000,
-      stepSize: 0.001,
-      minNotional: 0.001,
-    },
-    {
-      coinType: "BNBJPY",
-      baseCoin: "BNB",
-      tradeCoin: "JPY",
-      minQty: 0.0001,
-      maxQty: 92233,
-      stepSize: 0.0001,
-      minNotional: 100,
-    },
-    {
-      coinType: "ADABNB",
-      baseCoin: "ADA",
-      tradeCoin: "BNB",
-      minQty: 0.1,
-      maxQty: 9000000,
-      stepSize: 0.1,
-      minNotional: 0.01,
-    },
-    {
-      coinType: "SOLBNB",
-      baseCoin: "SOL",
-      tradeCoin: "BNB",
-      minQty: 0.001,
-      maxQty: 9000000,
-      stepSize: 0.001,
-      minNotional: 0.01,
-    },
-    {
-      coinType: "DOTBNB",
-      baseCoin: "DOT",
-      tradeCoin: "BNB",
-      minQty: 0.01,
-      maxQty: 9000000,
-      stepSize: 0.01,
-      minNotional: 0.01,
-    },
-    {
-      coinType: "TRXBNB",
-      baseCoin: "TRX",
-      tradeCoin: "BNB",
-      minQty: 1,
-      maxQty: 9000000,
-      stepSize: 1,
-      minNotional: 0.01,
-    },
-    {
-      coinType: "XRPBNB",
-      baseCoin: "XRP",
-      tradeCoin: "BNB",
-      minQty: 0.1,
-      maxQty: 9000000,
-      stepSize: 0.1,
-      minNotional: 0.01,
-    },
-    {
-      coinType: "AVAXBNB",
-      baseCoin: "AVAX",
-      tradeCoin: "BNB",
-      minQty: 0.01,
-      maxQty: 9000000,
-      stepSize: 0.01,
-      minNotional: 0.01,
-    },
-    {
-      coinType: "SUIBNB",
-      baseCoin: "SUI",
-      tradeCoin: "BNB",
-      minQty: 0.1,
-      maxQty: 92141578,
-      stepSize: 0.1,
-      minNotional: 0.01,
-    },
-    {
-      coinType: "LTCBNB",
-      baseCoin: "LTC",
-      tradeCoin: "BNB",
-      minQty: 0.001,
-      maxQty: 900000,
-      stepSize: 0.001,
-      minNotional: 0.01,
-    },
-    {
-      coinType: "HBARBNB",
-      baseCoin: "HBAR",
-      tradeCoin: "BNB",
-      minQty: 1,
-      maxQty: 9000000,
-      stepSize: 1,
-      minNotional: 0.01
-    },
-    {
-      coinType: "POLBNB",
-      baseCoin: "POL",
-      tradeCoin: "BNB",
-      minQty: 0.1,
-      maxQty: 92141578,
-      stepSize: 0.1,
-      minNotional: 0.01,
-    },
-    {
-      coinType: "LINKBNB",
-      baseCoin: "LINK",
-      tradeCoin: "BNB",
-      minQty: 0.001,
-      maxQty: 92141578,
-      stepSize: 0.001,
-      minNotional: 0.01,
-    },
-    {
-      coinType: "BCHBNB",
-      baseCoin: "BCH",
-      tradeCoin: "BNB",
-      minQty: 0.001,
-      maxQty: 900000,
-      stepSize: 0.001,
-      minNotional: 0.01,
-    },
-    {
-      coinType: "CHZBNB",
-      baseCoin: "CHZ",
-      tradeCoin: "BNB",
-      minQty: 1,
-      maxQty: 9000000,
-      stepSize: 1,
-      minNotional: 0.01,
-    },
-    {
-      coinType: "ETCBNB",
-      baseCoin: "ETC",
-      tradeCoin: "BNB",
-      minQty: 0.01,
-      maxQty: 9000000,
-      stepSize: 0.01,
-      minNotional: 0.01,
-    },
-    {
-      coinType: "AXSBNB",
-      baseCoin: "AXS",
-      tradeCoin: "BNB",
-      minQty: 0.01,
-      maxQty: 9000000,
-      stepSize: 0.01,
-      minNotional: 0.01,
-    },
-    {
-      coinType: "SEIBNB",
-      baseCoin: "SEI",
-      tradeCoin: "BNB",
-      minQty: 0.1,
-      maxQty: 92141578,
-      stepSize: 0.1,
-      minNotional: 0.01,
-    },
-    {
-      coinType: "NEARBNB",
-      baseCoin: "NEAR",
-      tradeCoin: "BNB",
-      minQty: 0.1,
-      maxQty: 9000000,
-      stepSize: 0.1,
-      minNotional: 0.01,
-    },
-    {
-      coinType: "CYBERBNB",
-      baseCoin: "CYBER",
-      tradeCoin: "BNB",
-      minQty: 0.01,
-      maxQty: 92141578,
-      stepSize: 0.01,
-      minNotional: 0.01,
-    },
-  ];
 }

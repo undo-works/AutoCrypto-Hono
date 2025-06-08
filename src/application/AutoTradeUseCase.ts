@@ -76,7 +76,7 @@ export class AutoTradeUseCase {
     const binanceMarketid = await this.marketsRepository.selectMarketIdByName(MARKETS.BINANCE);
 
     // リトライ処理の実行
-    await this.binanceRetryTradeService.execute();
+    await this.binanceRetryTradeService.execute(binanceMarketid);
 
     // サービスを順次実行
     for (const binanceMaService of this.binanceMaServiceArray) {

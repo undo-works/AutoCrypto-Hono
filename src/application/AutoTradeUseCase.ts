@@ -1,10 +1,11 @@
-import { BINANCE_COIN_TYPES, COIN_TYPES, MARKETS } from "../constants";
+import { BINANCE_COIN_TYPES, COIN_TYPES, KABUSTATION_COIN_TYPES, MARKETS } from "../constants";
 import { CoincheckMaService } from "../domain/services/CoincheckMaService";
 import { MarketsRepository } from "../repository/MarketsRepository";
 import { CurrenciesRepository } from "../repository/CurrenciesRepository";
 import { CoincheckRetryTradeService } from "../domain/services/CoincheckRetryTradeService";
 import { BinanceMaService } from "../domain/services/BinanceMaService";
 import { BinanceRetryTradeService } from "../domain/services/BinanceRetryTradeService";
+import { KabuStationMaService } from "../domain/services/KabuStationMaService";
 
 /**
  * 自動売買戦略を管理するユースケース
@@ -24,12 +25,14 @@ export class AutoTradeUseCase {
   private coincheckMaServiceArray: CoincheckMaService[] = [];
   // バイナンスの取引実行サービス
   private binanceMaServiceArray: BinanceMaService[] = [];
+  // 株ステーションの取引実行サービス
+  private kabuStationMaServiceArray: KabuStationMaService[] = [];
 
   constructor() {
     this.marketsRepository = new MarketsRepository();
     this.currencyRepository = new CurrenciesRepository();
     this.coincheckRetryTradeService = new CoincheckRetryTradeService();
-    this.binanceRetryTradeService = new BinanceRetryTradeService();
+    // this.binanceRetryTradeService = new BinanceRetryTradeService();
 
     COIN_TYPES.forEach((coinType) => {
       this.coincheckMaServiceArray.push(new CoincheckMaService(coinType));
@@ -38,6 +41,10 @@ export class AutoTradeUseCase {
     BINANCE_COIN_TYPES.forEach((coinType) => {
       this.binanceMaServiceArray.push(new BinanceMaService(coinType));
     })
+
+    KABUSTATION_COIN_TYPES.forEach((coinType) => {
+      this.kabuStationMaServiceArray.push(new KabuStationMaService(coinType));
+    });;
   }
 
   /**
@@ -84,6 +91,24 @@ export class AutoTradeUseCase {
         await binanceMaService.execute(
           binanceMarketid,
           binanceCurrencies.find((currency) => currency.symbol == binanceMaService.coinName)!
+        );
+      } catch (error) {
+        console.log(error);
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    // 銘柄情報の取得
+    const kabuCurrencies = await this.currencyRepository.selectAll();
+
+    // コインチェックの取引実行サービスのインスタンスを作成
+    const kabuMarketid = await this.marketsRepository.selectMarketIdByName(MARKETS.KABUSTATION);
+    // サービスを順次実行
+    for (const kabuMaService of this.kabuStationMaServiceArray) {
+      try {
+        await kabuMaService.execute(
+          kabuMarketid,
+          kabuCurrencies.find((currency) => currency.symbol == kabuMaService.coinName)!
         );
       } catch (error) {
         console.log(error);

@@ -25,3 +25,5 @@ export type CoincheckCoinType =
   | "grt";
 
 export type BinanceCoinType = "BNBBTC" | "BNBETH" | "BNBJPY" | "ADABNB" | "SOLBNB" | "DOTBNB" | "TRXBNB" | "XRPBNB" | "AVAXBNB" | "SUIBNB" | "LTCBNB" | "HBARBNB" | "POLBNB" | "LINKBNB" | "BCHBNB" | "CHZBNB" | "ETCBNB" | "AXSBNB" | "SEIBNB" | "NEARBNB" | "CYBERBNB";
+
+export type KabuStationCoinType = "151";

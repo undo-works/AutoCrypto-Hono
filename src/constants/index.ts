@@ -1,5 +1,5 @@
 import { BinanceTradeConfig } from "../domain/types/BinanceTradeConfig";
-import { BinanceCoinType, CoincheckCoinType } from "../infrastructure/api/types/CoinTypes";
+import { BinanceCoinType, CoincheckCoinType, KabuStationCoinType } from "../infrastructure/api/types/CoinTypes";
 
 export const COIN_TYPES: CoincheckCoinType[] = [
   "btc",
@@ -15,12 +15,17 @@ export const BINANCE_COIN_TYPES: BinanceCoinType[] = [
   "NEARBNB", "CYBERBNB"
 ];
 
+export const KABUSTATION_COIN_TYPES: KabuStationCoinType[] = [
+  "151"
+];
+
 /** 
  * マーケット名の定義
  */
 export const MARKETS = {
   COINCHECK: "coincheck",
   BINANCE: "binance",
+  KABUSTATION: "kabustation",
 }
 
 /**

@@ -53,7 +53,7 @@ export class TransactionsRepository {
    * アクティブフラグを更新
    */
   async updateActiveFlag(
-    offerId: number,
+    offerId: number | string,
     activeFlag: number
   ): Promise<void> { 
     // A simple UPDATE query

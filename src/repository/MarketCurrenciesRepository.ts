@@ -58,6 +58,9 @@ export class MarketCurrenciesRepository {
             ) AS sell_to_buy_quantity_ratio 
         FROM
             transactions t 
+        WHERE
+            t.active_flag = 1
+            AND t.transaction_datetime >= '2025/06/06'
         GROUP BY
             t.market_id
             , t.currency_id

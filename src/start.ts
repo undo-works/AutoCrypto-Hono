@@ -5,7 +5,7 @@ import { UpdateTradeConfigUseCase } from './application/UpdateTradeConfigUseCase
 const autoTradeUseCase = new AutoTradeUseCase();
 const updateTradeConfigUseCase = new UpdateTradeConfigUseCase();
 
-cron.schedule('*/1 * * * *', async () => {
+cron.schedule('*/5 * * * *', async () => {
   await autoTradeUseCase.execute();
 }, {
   timezone: 'Asia/Tokyo'

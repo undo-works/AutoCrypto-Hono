@@ -16,7 +16,7 @@ export class TransactionsRepository {
     quantity: number,
     pricePerUnit: number,
     totalAmount: number,
-    offerId: string,
+    offerId: number,
   ): Promise<void> {
     // A simple INSERT query
     try {
@@ -70,6 +70,30 @@ export class TransactionsRepository {
     } catch (err) {
       console.log(err);
       throw new Error("アクティブフラグの更新に失敗しました");
+    }
+  }
+
+
+  /**
+   * 取引量を更新
+   */
+  async updateQuantity(
+    offerId: number,
+    quantity: number
+  ): Promise<void> {
+    try {
+      const postInfo = await query<ResultSetHeader>(
+        `UPDATE transactions
+         SET quantity = ?
+         WHERE offer_id = ?;`,
+        [quantity, offerId]
+      );
+      if (postInfo.affectedRows !== 1) {
+        throw new Error("取引量の更新に失敗しました");
+      }
+    } catch (err) {
+      console.log(err);
+      throw new Error("取引量の更新に失敗しました");
     }
   }
 }

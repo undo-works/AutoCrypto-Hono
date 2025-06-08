@@ -110,14 +110,48 @@ SET
 -- 売却・購入の取引結果確認
 select
     t.currency_id
+    , c.symbol
     , t.transaction_type
-    , SUM(t.quantity * t.price_per_unit) 
-    , COUNT(t.transaction_type)
+    , SUM(t.quantity * t.price_per_unit)
+    , COUNT(t.transaction_type) 
 from
     transactions t 
+    INNER JOIN currencies c 
+        ON t.currency_id = c.currency_id 
 WHERE
-    t.transaction_datetime > "2025-05-23 23:13" 
-    and t.transaction_datetime < "2025-05-24 8:55" 
-    and currency_id = 2
+    t.transaction_datetime > "2025-06-6 23:13" 
+    and t.transaction_datetime < "2025-06-7 22:55" 
 GROUP BY
-    t.currency_id, t.transaction_type;
+    t.currency_id
+    , t.transaction_type 
+ORDER BY
+    t.currency_id; 
+
+-- 市場銘柄情報の追加
+insert 
+into crypto.marketcurrencies( 
+    market_id
+    , currency_id
+    , cross_status
+    , percent
+    , short_term
+    , long_term
+    , active_flag
+) 
+values ('2', '34', null, 5.00, '5', '25', '1')
+, ('2', '35', null, 5.00, '5', '25', '1')
+, ('2', '36', null, 5.00, '5', '25', '1')
+, ('2', '37', null, 5.00, '5', '25', '1')
+, ('2', '38', null, 5.00, '5', '25', '1')
+, ('2', '39', null, 5.00, '5', '25', '1')
+, ('2', '40', null, 5.00, '5', '25', '1')
+, ('2', '41', null, 5.00, '5', '25', '1')
+, ('2', '42', null, 5.00, '5', '25', '1')
+, ('2', '43', null, 5.00, '5', '25', '1')
+, ('2', '44', null, 5.00, '5', '25', '1')
+, ('2', '45', null, 5.00, '5', '25', '1')
+, ('2', '46', null, 5.00, '5', '25', '1')
+, ('2', '47', null, 5.00, '5', '25', '1')
+, ('2', '48', null, 5.00, '5', '25', '1'); 
+
+--

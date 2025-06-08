@@ -4,6 +4,7 @@ import { MarketsRepository } from "../repository/MarketsRepository";
 import { CurrenciesRepository } from "../repository/CurrenciesRepository";
 import { CoincheckRetryTradeService } from "../domain/services/CoincheckRetryTradeService";
 import { BinanceMaService } from "../domain/services/BinanceMaService";
+import { BinanceRetryTradeService } from "../domain/services/BinanceRetryTradeService";
 
 /**
  * 自動売買戦略を管理するユースケース
@@ -17,6 +18,8 @@ export class AutoTradeUseCase {
 
   // コインチェックの取引取り消しサービス
   private coincheckRetryTradeService: CoincheckRetryTradeService;
+  // バイナンスの取引取り消しサービス
+  private binanceRetryTradeService: BinanceRetryTradeService;
   // コインチェックの取引実行サービス
   private coincheckMaServiceArray: CoincheckMaService[] = [];
   // バイナンスの取引実行サービス
@@ -26,6 +29,7 @@ export class AutoTradeUseCase {
     this.marketsRepository = new MarketsRepository();
     this.currencyRepository = new CurrenciesRepository();
     this.coincheckRetryTradeService = new CoincheckRetryTradeService();
+    this.binanceRetryTradeService = new BinanceRetryTradeService();
 
     COIN_TYPES.forEach((coinType) => {
       this.coincheckMaServiceArray.push(new CoincheckMaService(coinType));
@@ -71,7 +75,8 @@ export class AutoTradeUseCase {
     // コインチェックの取引実行サービスのインスタンスを作成
     const binanceMarketid = await this.marketsRepository.selectMarketIdByName(MARKETS.BINANCE);
 
-    // TODO: リトライ処理の実行
+    // リトライ処理の実行
+    await this.binanceRetryTradeService.execute();
 
     // サービスを順次実行
     for (const binanceMaService of this.binanceMaServiceArray) {

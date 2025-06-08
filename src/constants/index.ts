@@ -8,10 +8,10 @@ export const COIN_TYPES: CoincheckCoinType[] = [
 ];
 
 export const BINANCE_COIN_TYPES: BinanceCoinType[] = [
-  "BNBBTC", "BNBETH", "BNBJPY"
-// "eth", "xrp",
-// "etc", "lsk",  "xem", "bch", "mona", "iost", "enj", "chz", "imx", "shib", "avax", "fnct",
-// "dai", "wbtc", "bril", "bc", "doge", "pepe", "mask", "mana", "grt"
+  "BNBBTC", "BNBETH", "BNBJPY",
+  "ADABNB", "SOLBNB", "DOTBNB", "TRXBNB", "XRPBNB", "AVAXBNB", "SUIBNB", "LTCBNB",
+  "HBARBNB", "POLBNB", "LINKBNB", "BCHBNB", "CHZBNB", "ETCBNB", "AXSBNB", "SEIBNB",
+  "NEARBNB", "CYBERBNB"
 ];
 
 /** 

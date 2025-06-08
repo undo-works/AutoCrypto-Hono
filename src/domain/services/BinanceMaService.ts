@@ -80,7 +80,7 @@ export class BinanceMaService extends MaService {
 
       // 24hで何パーセント上がっているときならBNB → コインに替えてよいか
       // 取引%が20以上だったら1% 10%以上なら3%、それ以下なら5%（取引%を信用度として利用）
-      const btocThreshold = Number(marketCurrency.percent) > 20 ? 1 : Number(marketCurrency.percent) > 10 ? 3 : 5;
+      const btocThreshold = Number(marketCurrency.percent) > 20 ? 0.5 : Number(marketCurrency.percent) > 10 ? 1 : 1.5;
 
       // コイン購入時から比較した価格の上昇率：デッドクロスでの比較に利用
       const overBuyPrice = lastTrade.length > 0 && lastTrade[0]?.isMaker === true ? lastTrade[0].price / marketPrice : null;
@@ -89,23 +89,45 @@ export class BinanceMaService extends MaService {
       if (shortMA > longMA // 短期MAが長期MAを上抜き
         && currentPrice >= shortMA // 現在価格が短期MA以上
         && marketPrices[0] > marketPrices[1] && marketPrices[1] > marketPrices[2] // 価格が上昇傾向にある
-        && btocThreshold < priceChangeData.priceChangePercent //BNB基準の時は24hの価格変動率が正に大きいとき、コインの価値が落ちてる
+      // && btocThreshold < priceChangeData.priceChangePercent //BNB基準の時は24hの価格変動率が正に大きいとき、コインの価値が落ちてる
         && crossStatus !== "golden") {
-        // ゴールデンクロスの状態に変更
-        await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "golden");
         // すでに買ってたらスルー
-        const openOrders = await this.binanceClient.getOpenOrders(currency.symbol);
+        const openOrders = await this.binanceClient.getOpenOrder(currency.symbol);
         if (openOrders.length > 0) {
           console.log(`BinanceMaServiceクラス → コイン種類: ${currency.symbol}はすでに買っているのでスルー`);
           return;
         }
         // 購入量を計算
         const { coinAmount, bnbAmount } = await this.calculateBuyAmountByBNB(currentPrice, Number(marketCurrency.percent));
+        // coinAmountがconfigの条件内に収まるように調整
+        const config = this.tradeConfig.find(cfg => cfg.coinType === currency.symbol);
+        if (!config) {
+          console.error(`tradeConfigが見つかりません: ${currency.symbol}`);
+          return;
+        }
+        // 最小・最大・stepSizeで調整
+        let adjustedCoinAmount = bnbAmount;
+        // stepSizeに合わせて切り捨て
+        adjustedCoinAmount = Math.floor(adjustedCoinAmount / config.stepSize) * config.stepSize;
+        const decimals = (config.stepSize.toString().split('.')[1] || '').length;
+        adjustedCoinAmount = Math.floor(adjustedCoinAmount * Math.pow(10, decimals)) / Math.pow(10, decimals);
+        console.log(`調整後の購入量: ${adjustedCoinAmount} coin | decimals: ${decimals}`);
+
+        if (adjustedCoinAmount < config.minQty) {
+          // 売却量が最小取引量未満の場合スルー
+          console.log(`BinanceMaServiceクラス → コイン種類: ${currency.symbol}の購入量(${adjustedCoinAmount})が最小取引量(${config.minQty})未満のためスルーします。`);
+          return;
+        }
+        if (adjustedCoinAmount * marketPrice < config.minNotional) {
+          // 売却総額が最小取引総額未満の場合スルー
+          console.log(`コイン種類: ${currency.symbol}の売却総額(${adjustedCoinAmount * marketPrice})が最小取引総額(${config.minNotional})未満のためスルーします`);
+          return;
+        }
         // 購入
         const orderResult = await this.binanceClient.createOrder(
           currency.symbol,
           'SELL', // BNBベースなので「売り」
-          bnbAmount, // BNBの量を指定
+          adjustedCoinAmount, // BNBの量を指定
           marketPrice // 1BNB当たりの価格を指定
         );
         // 取引履歴を追加
@@ -116,17 +138,17 @@ export class BinanceMaService extends MaService {
           coinAmount, // 購入するコインの量
           currentPrice, // 1コイン当たりのBNB価格(bnb/coin)
           currentPrice * coinAmount, // 購入に使ったBNBの量
-          orderResult?.prepayId?.toString()
+          orderResult?.orderId
         )
+        // ゴールデンクロスの状態に変更
+        await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "golden");
         console.log(`コイン種類: ${currency.symbol}を購入しました。購入量: ${coinAmount} coin、価格: ${currentPrice} bnb/coin、shortMA: ${shortMA}, longMA: ${longMA}、 価格変動率: ${priceChangeData.priceChangePercent}%`);
       }
       // デッドクロス（短期MAが長期MAを下抜き）
       else if (shortMA < longMA
         && currentPrice <= shortMA
-        && (overBuyPrice === null || overBuyPrice > 1.005)
+      // && (overBuyPrice === null || overBuyPrice > 1.005)
         && crossStatus !== "dead") {
-        // デッドクロスの状態に変更
-        await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "dead");
         // // 注文をキャンセル
         // const openOrders = await this.binanceClient.getOpenOrders();
         // openOrders.orders.filter(order => order.pair === currency.symbol).forEach(async (order) => {
@@ -139,6 +161,8 @@ export class BinanceMaService extends MaService {
         const { coinAmount, bnbAmount } = await this.calculateSellAmount(currency.symbol, currentPrice);
         if (bnbAmount === 0) {
           // 売却量が0場合スルー
+          console.log(`コイン種類: ${currency.symbol}の売却量が0のためスルーしてデッドクロスに変更します`);
+          await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "dead");
           return;
         }
         // 売却
@@ -156,12 +180,14 @@ export class BinanceMaService extends MaService {
           coinAmount,
           currentPrice,
           currentPrice * coinAmount,
-          orderResult?.prepayId?.toString()
+          orderResult?.orderId
         )
-        console.log(`コイン種類: ${currency.symbol}を売却しました。購入量: ${coinAmount} coin、価格: ${currentPrice} bnb/coin、shortMA: ${shortMA}, longMA: ${longMA}、 価格変動率: ${priceChangeData.priceChangePercent}%`);
+        // デッドクロスの状態に変更
+        await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "dead");
+        console.log(`コイン種類: ${currency.symbol}を売却しました。購入量: ${coinAmount} coin、価格: ${currentPrice} bnb/coin、shortMA: ${shortMA}, longMA: ${longMA}、 価格変動率: ${priceChangeData.priceChangePercent}%、価格上昇度：${overBuyPrice}`);
       } else {
         // 移動平均線が交差していない場合は何もしない
-        console.log(`コイン種類: ${currency.symbol}、価格: ${currentPrice} bnb/coin、shortMA: ${shortMA}, longMA: ${longMA}、 価格変動率: ${priceChangeData.priceChangePercent}%`);
+        console.log(`コイン種類: ${currency.symbol}、価格: ${currentPrice} bnb/coin、shortMA: ${shortMA}, longMA: ${longMA}、 価格変動率: ${priceChangeData.priceChangePercent}%、価格上昇度：${overBuyPrice}`);
       }
     }
   }
@@ -193,7 +219,7 @@ export class BinanceMaService extends MaService {
 
       // 24hで何パーセント下がったらBNB → コインに替えてよいか：ゴールデンクロスでの比較に利用
       // 取引%が20以上だったら-1% 10%以上なら-3%、それ以下なら-5%
-      const btocThreshold = Number(marketCurrency.percent) > 20 ? -1 : Number(marketCurrency.percent) > 10 ? -3 : -5;
+      const btocThreshold = Number(marketCurrency.percent) > 20 ? -0.5 : Number(marketCurrency.percent) > 10 ? -1 : -1.5;
 
       // コイン購入時から比較した価格の上昇率：デッドクロスでの比較に利用
       const overBuyPrice = lastTrade.length > 0 && lastTrade[0]?.isBuyer === true ? marketPrice / lastTrade[0].price : null;
@@ -202,23 +228,45 @@ export class BinanceMaService extends MaService {
       if (shortMA > longMA // 短期MAが長期MAを上抜き
         && marketPrice >= shortMA // 現在価格が短期MA以上
         && marketPrices[0] > marketPrices[1] && marketPrices[1] > marketPrices[2] // 価格が上昇傾向にある
-        && btocThreshold > priceChangeData.priceChangePercent // 負の方向の価格変動率が大きいとき
+      // && btocThreshold > priceChangeData.priceChangePercent // 負の方向の価格変動率が大きいとき
         && crossStatus !== "golden") {
-        // ゴールデンクロスの状態に変更
-        await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "golden");
         // すでに買ってたらスルー
-        const openOrders = await this.binanceClient.getOpenOrders(currency.symbol);
+        const openOrders = await this.binanceClient.getOpenOrder(currency.symbol);
         if (openOrders.length > 0) {
           console.log(`BinanceMaServiceクラス → コイン種類: ${currency.symbol}はすでに買っているのでスルー`);
           return;
         }
         // 購入量を計算
         const { coinAmount, bnbAmount } = await this.calculateBuyAmountByBNB(marketPrice, Number(marketCurrency.percent));
+        // coinAmountがconfigの条件内に収まるように調整
+        const config = this.tradeConfig.find(cfg => cfg.coinType === currency.symbol);
+        if (!config) {
+          console.error(`tradeConfigが見つかりません: ${currency.symbol}`);
+          return;
+        }
+        // 最小・最大・stepSizeで調整
+        let adjustedCoinAmount = coinAmount;
+        // stepSizeに合わせて切り捨て
+        adjustedCoinAmount = Math.floor(adjustedCoinAmount / config.stepSize) * config.stepSize;
+        const decimals = (config.stepSize.toString().split('.')[1] || '').length;
+        adjustedCoinAmount = Math.floor(adjustedCoinAmount * Math.pow(10, decimals)) / Math.pow(10, decimals);
+        console.log(`調整後の購入量: ${adjustedCoinAmount} coin | decimals: ${decimals}`);
+
+        if (adjustedCoinAmount < config.minQty) {
+          // 購入量が最小取引量未満の場合スルー
+          console.log(`コイン種類: ${currency.symbol}の購入量(${adjustedCoinAmount})が最小取引量(${config.minQty})未満のためスルーします。`);
+          return;
+        }
+        if (adjustedCoinAmount * marketPrice < config.minNotional) {
+          // 購入総額が最小取引総額未満の場合スルー
+          console.log(`コイン種類: ${currency.symbol}の購入総額(${adjustedCoinAmount * marketPrice})が最小取引総額(${config.minNotional})未満のためスルーします`);
+          return;
+        }
         // 購入
         const orderResult = await this.binanceClient.createOrder(
           currency.symbol,
           "BUY", // BNBを使ってコインを買う
-          coinAmount, // コインの量を指定
+          adjustedCoinAmount, // コインの量を指定
           marketPrice // 1BNB当たりの価格を指定
         );
         // 取引履歴を追加
@@ -226,20 +274,20 @@ export class BinanceMaService extends MaService {
           marketId,
           currency?.currency_id,
           'buy',
-          coinAmount, // 購入するコインの量
-          bnbAmount, // 1コイン当たりのBNB価格(bnb/coin)
+          adjustedCoinAmount, // 購入するコインの量
+          marketPrice, // 1コイン当たりのBNB価格(bnb/coin)
           marketPrice * bnbAmount, // 購入に使ったBNBの量
-          orderResult?.prepayId?.toString()
+          orderResult?.orderId
         )
+        // ゴールデンクロスの状態に変更
+        await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "golden");
         console.log(`コイン種類: ${currency.symbol}を購入しました。購入量: ${coinAmount} coin、価格: ${marketPrice} bnb/coin、shortMA: ${shortMA}, longMA: ${longMA}、 価格変動率: ${priceChangeData.priceChangePercent}%`);
       }
       // デッドクロス（短期MAが長期MAを下抜き）
       else if (shortMA < longMA
         && marketPrice <= shortMA
-        && (overBuyPrice === null || overBuyPrice > 1.005) // コイン購入時から比較して価格が0.5%以上上昇している場合は売ってよい
+      // && (overBuyPrice === null || overBuyPrice > 1.002) // コイン購入時から比較して価格が0.2%以上上昇している場合は売ってよい
         && crossStatus !== "dead") {
-        // デッドクロスの状態に変更
-        await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "dead");
         // // 注文をキャンセル
         // const openOrders = await this.binanceClient.getOpenOrders();
         // openOrders.orders.filter(order => order.pair === currency.symbol).forEach(async (order) => {
@@ -250,15 +298,37 @@ export class BinanceMaService extends MaService {
         // });
         // 売却量を計算
         const { coinAmount, bnbAmount } = await this.calculateSellAmount(currency.symbol, marketPrice);
-        if (coinAmount === 0) {
-          // 売却量が0場合スルー
+        // coinAmountがconfigの条件内に収まるように調整
+        const config = this.tradeConfig.find(cfg => cfg.coinType === currency.symbol);
+        if (!config) {
+          console.error(`tradeConfigが見つかりません: ${currency.symbol}`);
+          return;
+        }
+        // 最小・最大・stepSizeで調整
+        let adjustedCoinAmount = coinAmount;
+        // stepSizeに合わせて切り捨て
+        adjustedCoinAmount = Math.floor(adjustedCoinAmount / config.stepSize) * config.stepSize;
+        const decimals = (config.stepSize.toString().split('.')[1] || '').length;
+        adjustedCoinAmount = Math.floor(adjustedCoinAmount * Math.pow(10, decimals)) / Math.pow(10, decimals);
+        console.log(`調整後の購入量: ${adjustedCoinAmount} coin | decimals: ${decimals}`);
+
+        if (adjustedCoinAmount < config.minQty) {
+        // 売却量が最小取引量未満の場合スルー
+          console.log(`コイン種類: ${currency.symbol}の売却量(${adjustedCoinAmount})が最小取引量(${config.minQty})未満のためスルーしてデッドクロスに変更します`);
+          await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "dead");
+          return;
+        }
+        if (adjustedCoinAmount * marketPrice < config.minNotional) {
+          // 売却量が最小取引総額未満の場合スルー
+          console.log(`コイン種類: ${currency.symbol}の売却総額(${adjustedCoinAmount * marketPrice})が最小取引総額(${config.minNotional})未満のためスルーしてデッドクロスに変更します`);
+          await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "dead");
           return;
         }
         // 売却
         const orderResult = await this.binanceClient.createOrder(
           currency.symbol,
           "SELL", // BNBを「購入」してコインを放す
-          coinAmount, // BNBの量を指定
+          adjustedCoinAmount, // BNBの量を指定
           marketPrice // 1BNB当たりの価格を指定
         );
         // 取引履歴を追加
@@ -266,15 +336,17 @@ export class BinanceMaService extends MaService {
           marketId,
           currency?.currency_id,
           'sell',
-          coinAmount,
+          adjustedCoinAmount,
           marketPrice,
           marketPrice * coinAmount,
-          orderResult?.prepayId?.toString()
+          orderResult?.orderId
         )
-        console.log(`コイン種類: ${currency.symbol}を売却しました。購入量: ${coinAmount} coin、価格: ${marketPrice} bnb/coin、shortMA: ${shortMA}, longMA: ${longMA}、 価格変動率: ${priceChangeData.priceChangePercent}%`);
+        // デッドクロスの状態に変更
+        await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "dead");
+        console.log(`コイン種類: ${currency.symbol}を売却しました。購入量: ${coinAmount} coin、価格: ${marketPrice} bnb/coin、shortMA: ${shortMA}, longMA: ${longMA}、 価格変動率: ${priceChangeData.priceChangePercent}%、価格上昇度：${overBuyPrice}`);
       } else {
         // 移動平均線が交差していない場合は何もしない
-        console.log(`コイン種類: ${currency.symbol}。価格: ${marketPrice} bnb/coin、shortMA: ${shortMA}, longMA: ${longMA}、 価格変動率: ${priceChangeData.priceChangePercent}%`);
+        console.log(`コイン種類: ${currency.symbol}。価格: ${marketPrice} bnb/coin、shortMA: ${shortMA}, longMA: ${longMA}、 価格変動率: ${priceChangeData.priceChangePercent}%、価格上昇度：${overBuyPrice}`);
       }
     }
   }
@@ -293,9 +365,16 @@ export class BinanceMaService extends MaService {
     if (bnbBalance === 0) {
       throw new Error('BNBの残高が0です。購入できません。');
     }
-    console.log(`BNBの残高: ${bnbBalance} BNB`);
+    const allBalance = await this.binanceClient.getTotalBalanceInBNB();
+    console.log(`BNBの残高: ${bnbBalance} BNB、 全体の残高: ${allBalance} BNB`);
     // リスクを加味して現在所持する円のうち[RISK_PERSENT]%分の円を使う
-    const riskInvestBnB = Math.floor(bnbBalance * percent / 100 * Math.pow(10, 3)) / Math.pow(10, 3);
+    let riskInvestBnB = Math.floor(allBalance * percent / 100 * Math.pow(10, 3)) / Math.pow(10, 3);
+
+    if (riskInvestBnB > bnbBalance) {
+      // リスク投資額がBNBの残高を超える場合はBNBの残高を使う
+      riskInvestBnB = bnbBalance;
+      console.log(`BNBの残高を超えるため、リスク投資額をBNBの残高に調整しました: ${riskInvestBnB} BNB`);
+    }
     // const config = this.tradeConfig.find(config => config.coinType === coinType);
     // if (!config) {
     //   throw new Error(`tradeConfigが見つかりません: ${coinType}`);
@@ -317,6 +396,7 @@ export class BinanceMaService extends MaService {
     // }
 
     const coinAmount = Math.floor(riskInvestBnB / currentPrice * Math.pow(10, 3)) / Math.pow(10, 3);
+
     console.log(`消費するBNBの量: ${riskInvestBnB} BNB → 購入するコインの量: ${coinAmount} coin`);
 
     return { coinAmount: coinAmount, bnbAmount: riskInvestBnB }; // BNBを基準にしているので、購入するコインの量はBNBの量/現在価格(bnb/coin)
@@ -333,118 +413,204 @@ export class BinanceMaService extends MaService {
     /**  */
     const config = this.tradeConfig.find(config => config.coinType === coinType);
     /** 現在保持しているコインの合計 */
-    const coinBalance = await this.binanceClient.getCoinBalance(config?.tradeCoin!);
+    const coinBalance = await this.binanceClient.getCoinBalance(config?.tradeCoin! !== "BNB" ? config?.tradeCoin! : config?.baseCoin!);
 
     const bnbAmount = Math.floor(coinBalance * currentPrice * Math.pow(10, 3)) / Math.pow(10, 3);
 
     return { coinAmount: coinBalance, bnbAmount: bnbAmount }; // BNBを基準にしているので、売却するコインの量はコインの量*現在価格(bnb/coin)
   }
 
+  // 取引設定は以下で調べる
+  // https://api.binance.com/api/v3/exchangeInfo?symbol=BNBJPY
   private tradeConfig: BinanceTradeConfig[] = [
     {
       coinType: "BNBBTC",
       baseCoin: "BNB",
       tradeCoin: "BTC",
+      minQty: 0.001,
+      maxQty: 1000,
+      stepSize: 0.001,
+      minNotional: 0.0001,
     },
     {
       coinType: "BNBETH",
       baseCoin: "BNB",
       tradeCoin: "ETH",
+      minQty: 0.001,
+      maxQty: 9000000,
+      stepSize: 0.001,
+      minNotional: 0.001,
     },
     {
       coinType: "BNBJPY",
       baseCoin: "BNB",
       tradeCoin: "JPY",
+      minQty: 0.0001,
+      maxQty: 92233,
+      stepSize: 0.0001,
+      minNotional: 100,
     },
     {
       coinType: "ADABNB",
       baseCoin: "ADA",
       tradeCoin: "BNB",
+      minQty: 0.1,
+      maxQty: 9000000,
+      stepSize: 0.1,
+      minNotional: 0.01,
     },
     {
       coinType: "SOLBNB",
       baseCoin: "SOL",
       tradeCoin: "BNB",
+      minQty: 0.001,
+      maxQty: 9000000,
+      stepSize: 0.001,
+      minNotional: 0.01,
     },
     {
       coinType: "DOTBNB",
       baseCoin: "DOT",
       tradeCoin: "BNB",
+      minQty: 0.01,
+      maxQty: 9000000,
+      stepSize: 0.01,
+      minNotional: 0.01,
     },
     {
       coinType: "TRXBNB",
       baseCoin: "TRX",
       tradeCoin: "BNB",
+      minQty: 1,
+      maxQty: 9000000,
+      stepSize: 1,
+      minNotional: 0.01,
     },
     {
       coinType: "XRPBNB",
       baseCoin: "XRP",
       tradeCoin: "BNB",
+      minQty: 0.1,
+      maxQty: 9000000,
+      stepSize: 0.1,
+      minNotional: 0.01,
     },
     {
       coinType: "AVAXBNB",
       baseCoin: "AVAX",
       tradeCoin: "BNB",
+      minQty: 0.01,
+      maxQty: 9000000,
+      stepSize: 0.01,
+      minNotional: 0.01,
     },
     {
       coinType: "SUIBNB",
       baseCoin: "SUI",
       tradeCoin: "BNB",
+      minQty: 0.1,
+      maxQty: 92141578,
+      stepSize: 0.1,
+      minNotional: 0.01,
     },
     {
       coinType: "LTCBNB",
       baseCoin: "LTC",
       tradeCoin: "BNB",
+      minQty: 0.001,
+      maxQty: 900000,
+      stepSize: 0.001,
+      minNotional: 0.01,
     },
     {
       coinType: "HBARBNB",
       baseCoin: "HBAR",
       tradeCoin: "BNB",
+      minQty: 1,
+      maxQty: 9000000,
+      stepSize: 1,
+      minNotional: 0.01
     },
     {
       coinType: "POLBNB",
       baseCoin: "POL",
       tradeCoin: "BNB",
+      minQty: 0.1,
+      maxQty: 92141578,
+      stepSize: 0.1,
+      minNotional: 0.01,
     },
     {
       coinType: "LINKBNB",
       baseCoin: "LINK",
       tradeCoin: "BNB",
+      minQty: 0.001,
+      maxQty: 92141578,
+      stepSize: 0.001,
+      minNotional: 0.01,
     },
     {
       coinType: "BCHBNB",
       baseCoin: "BCH",
       tradeCoin: "BNB",
+      minQty: 0.001,
+      maxQty: 900000,
+      stepSize: 0.001,
+      minNotional: 0.01,
     },
     {
       coinType: "CHZBNB",
       baseCoin: "CHZ",
       tradeCoin: "BNB",
+      minQty: 1,
+      maxQty: 9000000,
+      stepSize: 1,
+      minNotional: 0.01,
     },
     {
       coinType: "ETCBNB",
       baseCoin: "ETC",
       tradeCoin: "BNB",
+      minQty: 0.01,
+      maxQty: 9000000,
+      stepSize: 0.01,
+      minNotional: 0.01,
     },
     {
       coinType: "AXSBNB",
       baseCoin: "AXS",
       tradeCoin: "BNB",
+      minQty: 0.01,
+      maxQty: 9000000,
+      stepSize: 0.01,
+      minNotional: 0.01,
     },
     {
       coinType: "SEIBNB",
       baseCoin: "SEI",
       tradeCoin: "BNB",
+      minQty: 0.1,
+      maxQty: 92141578,
+      stepSize: 0.1,
+      minNotional: 0.01,
     },
     {
       coinType: "NEARBNB",
       baseCoin: "NEAR",
       tradeCoin: "BNB",
+      minQty: 0.1,
+      maxQty: 9000000,
+      stepSize: 0.1,
+      minNotional: 0.01,
     },
     {
       coinType: "CYBERBNB",
       baseCoin: "CYBER",
       tradeCoin: "BNB",
+      minQty: 0.01,
+      maxQty: 92141578,
+      stepSize: 0.01,
+      minNotional: 0.01,
     },
-  ]
+  ];
 }

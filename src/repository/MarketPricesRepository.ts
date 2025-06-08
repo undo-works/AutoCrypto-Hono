@@ -73,7 +73,7 @@ export class MarketPricesRepository {
     try {
       const rows = await query<{ price: number }[]>(
         `SELECT price FROM marketprices
-         WHERE market_id = ? AND currency_id = ?
+         WHERE market_id = ? AND currency_id = ? AND record_datetime >= "2025/06/01"
          ORDER BY record_datetime ASC`,
         [marketId, currencyId] // 必要に応じてIDを変更
       );

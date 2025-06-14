@@ -3,6 +3,7 @@ import { BinanceClient } from "../../infrastructure/api/BinanceClient";
 import { CoinCheckClient } from "../../infrastructure/api/CoinCheckClient";
 import { CoincheckCoinType } from "../../infrastructure/api/types/CoinTypes";
 import { CurrenciesRepository } from "../../repository/CurrenciesRepository";
+import { MarketCurrenciesRepository } from "../../repository/MarketCurrenciesRepository";
 import { TransactionsRepository } from "../../repository/TransactionsRepository";
 
 
@@ -18,10 +19,13 @@ export class BinanceRetryTradeService {
   private transactionsRepository: TransactionsRepository;
   /** 銘柄リポジトリ */
   private currenciesRepository: CurrenciesRepository;
+  /** 市場銘柄リポジトリ */
+  private MarketCurrenciesRepository: MarketCurrenciesRepository;
 
   constructor() {
     this.transactionsRepository = new TransactionsRepository();
     this.currenciesRepository = new CurrenciesRepository();
+    this.MarketCurrenciesRepository = new MarketCurrenciesRepository();
     this.binanceClient = new BinanceClient(
       process.env.BINANCE_API_KEY!,
       process.env.BINANCE_SECRET_KEY!
@@ -65,21 +69,27 @@ export class BinanceRetryTradeService {
         const bnbBalance = await this.binanceClient.getCoinBalance('BNB');
         /** トレードの設定値を取得 */
         const tradeConfig = BINANCE_TRADE_CONFIG.find(config => config.coinType === order.symbol);
-        if (tradeConfig?.baseCoin === "BNB" && order.side === 'SELL' && bnbBalance < orderQuantity / currentPrice) {
+        if (tradeConfig?.baseCoin === "BNB" && order.side === 'SELL' && bnbBalance < orderQuantity) {
           // BNB基準の売却の時 かつ  BNB残高 < 売却量(BNB) の場合
-          // orderQuanntityをBNB残高 / 現在価格(BNB/コイン)に変更
-          // 基本的にここには入らない想定
-          orderQuantity = Math.floor(bnbBalance / currentPrice / tradeConfig.stepSize) * tradeConfig.stepSize;
-          const decimals = (tradeConfig.stepSize.toString().split('.')[1] || '').length;
-          orderQuantity = Math.floor(orderQuantity * Math.pow(10, decimals)) / Math.pow(10, decimals);
-          console.log(`調整後の購入量: ${orderQuantity} coin | decimals: ${decimals}`);
-        } else if (tradeConfig?.tradeCoin === "BNB" && order.side === 'BUY' && bnbBalance < orderQuantity / currentPrice) {
-          // コイン基準の購入の時 かつ BNB残高 < 購入量(コイン) / 現在価格(コイン/BNB) の場合
-          // orderQuanntityをBNB残高 * 現在価格(コイン/BNB) に変更
+          // orderQuanntity(BNB)をBNB残高に変更
+          orderQuantity = Math.floor(bnbBalance / tradeConfig.stepSize) * tradeConfig.stepSize;
+        } else if (tradeConfig?.tradeCoin === "BNB" && order.side === 'BUY' && bnbBalance < orderQuantity * currentPrice) {
+          // コイン基準の購入の時 かつ BNB残高 < 購入量(コイン) * 現在価格(BNB/コイン) の場合
+          // orderQuanntity(コイン)をBNB残高 * 現在価格(コイン/BNB) に変更
           orderQuantity = Math.floor(bnbBalance * currentPrice / tradeConfig.stepSize) * tradeConfig.stepSize;
-          const decimals = (tradeConfig.stepSize.toString().split('.')[1] || '').length;
-          orderQuantity = Math.floor(orderQuantity * Math.pow(10, decimals)) / Math.pow(10, decimals);
-          console.log(`調整後の購入量: ${orderQuantity} coin | decimals: ${decimals}`);
+        }
+        const decimals = (tradeConfig!.stepSize.toString().split('.')[1] || '').length;
+        orderQuantity = Math.floor(orderQuantity * Math.pow(10, decimals)) / Math.pow(10, decimals);
+        console.log(`調整後の購入量: ${orderQuantity} coin | decimals: ${decimals}`);
+
+        // 銘柄情報を取得
+        const currency = await this.currenciesRepository.selectBySymbol(order.symbol);
+        if (orderQuantity <= (tradeConfig?.minNotional ?? 0)) {
+          console.log(`再トレードの量が${tradeConfig?.minNotional ?? 0}以下になったため、再トレードをスキップします。コイン：${order.symbol}|注文量: ${orderQuantity}|BNB残高: ${bnbBalance}|現在価格: ${currentPrice}`);
+          const marketCurrenciesRepository = new MarketCurrenciesRepository();
+          // クロスフラグをnullに設定
+          await marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency.currency_id, null);
+          continue;
         }
         // 再トレードを実行
         const orderResult = await this.binanceClient.createOrder(
@@ -88,10 +98,20 @@ export class BinanceRetryTradeService {
           orderQuantity,
           currentPrice
         );
-        // 再トレードの結果を取引履歴に追加
-        const currency = await this.currenciesRepository.selectBySymbol(order.symbol);
-        await this.transactionsRepository.insertTransaction(marketId, currency.currency_id, order.side, order.origQty - order.executedQty, currentPrice, currentPrice * (order.origQty - order.executedQty), orderResult.orderId);
-        console.log(`再トレード実行: ${order.symbol}|${order.side}|約定済み量: ${order.executedQty}|元の注文量: ${order.origQty}|価格: ${currentPrice}`);
+
+        if (tradeConfig?.baseCoin == "BNB") {
+          // 現在価格(bnb/coin)を反転する -> coin/bnb
+          const reversePrice = 1 / currentPrice;
+          // quantity(コインの量) -> bnb ÷ 現在価格(bnb/coin)
+          // price per unit(コインの価格) -> 反転した価格(coin/bnb)
+          // total amount -> BNBの量を渡せばよい
+          await this.transactionsRepository.insertTransaction(marketId, currency.currency_id, order.side, orderQuantity / currentPrice, reversePrice, orderQuantity, orderResult.orderId);
+          console.log(`再トレード実行: ${order.symbol}|${order.side}|約定済み量: ${order.executedQty}|元の注文量: ${order.origQty}|価格: ${currentPrice}`);
+        } else {
+          await this.transactionsRepository.insertTransaction(marketId, currency.currency_id, order.side, orderQuantity, currentPrice, currentPrice * orderQuantity, orderResult.orderId);
+          console.log(`再トレード実行: ${order.symbol}|${order.side}|約定済み量: ${order.executedQty}|元の注文量: ${order.origQty}|価格: ${currentPrice}`);
+        }
+
       } catch (error) {
         console.error('再トレードの実行に失敗しました', error);
       }

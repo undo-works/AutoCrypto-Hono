@@ -67,12 +67,7 @@ export class AutoTradeUseCase {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-
-    // バイナンスの取引実行サービスのインスタンスを作成
-    // 銘柄情報の取得
-    const binanceCurrencies = await this.currencyRepository.selectAll();
-
-    // コインチェックの取引実行サービスのインスタンスを作成
+    // bainanceの市場情報を検索
     const binanceMarketid = await this.marketsRepository.selectMarketIdByName(MARKETS.BINANCE);
 
     // リトライ処理の実行
@@ -83,7 +78,7 @@ export class AutoTradeUseCase {
       try {
         await binanceMaService.execute(
           binanceMarketid,
-          binanceCurrencies.find((currency) => currency.symbol == binanceMaService.coinName)!
+          currencies.find((currency) => currency.symbol == binanceMaService.coinName)!
         );
       } catch (error) {
         console.log(error);

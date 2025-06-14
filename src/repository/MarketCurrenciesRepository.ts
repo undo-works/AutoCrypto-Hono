@@ -12,7 +12,7 @@ export class MarketCurrenciesRepository {
   async upsertMarketCurrencies(
     marketId: number,
     currencyId: number,
-    crossStatus: "golden" | "dead",
+    crossStatus: "golden" | "dead" | null,
   ): Promise<void> {
     // A simple INSERT query
     try {

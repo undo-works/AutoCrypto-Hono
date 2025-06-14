@@ -1,4 +1,5 @@
 import { MarketCurrenciesEntity } from "../../entity/MarketCurrenciesEntity";
+import { CurrenciesRepository } from "../../repository/CurrenciesRepository";
 import { MarketCurrenciesRepository } from "../../repository/MarketCurrenciesRepository";
 import { MarketPricesRepository } from "../../repository/MarketPricesRepository";
 
@@ -21,10 +22,13 @@ export class VerifyMaIntervalService {
     private marketPriceRepository: MarketPricesRepository;
     // 市場銘柄のリポジトリ
     private marketCurrenciesRepository: MarketCurrenciesRepository;
+    // 銘柄のリポジトリ
+    private currenciesRepository: CurrenciesRepository;
 
     constructor() {
         this.marketPriceRepository = new MarketPricesRepository();
         this.marketCurrenciesRepository = new MarketCurrenciesRepository();
+        this.currenciesRepository = new CurrenciesRepository();
     }
 
     /**
@@ -72,18 +76,19 @@ export class VerifyMaIntervalService {
         let balance = initialBalance; // 現金残高
         let holdings = 0;             // 保有数量
 
-        // シグナルに従って売買をシミュレート
+        // シグナルに従って売買をシミュレート（手数料0.1%考慮）
+        const feeRate = 0.001; // 0.1%
         for (let i = 0; i < data.length; i++) {
-            if (signal[i] === 1) {
-                // 全額で購入
+            if (signal[i] === 1 && balance > 0) {
+            // 全額で購入（手数料差し引き後の数量を取得）
                 const buyPrice = data[i];
-                const amountToBuy = balance / buyPrice;
+                const amountToBuy = (balance / buyPrice) * (1 - feeRate);
                 holdings += amountToBuy;
                 balance = 0;
-            } else if (signal[i] === -1) {
-                // 全量売却
+            } else if (signal[i] === -1 && holdings > 0) {
+                // 全量売却（手数料差し引き後の受取額を計算）
                 const sellPrice = data[i];
-                balance += holdings * sellPrice;
+                balance += holdings * sellPrice * (1 - feeRate);
                 holdings = 0;
             }
         }
@@ -129,7 +134,9 @@ export class VerifyMaIntervalService {
         }
         // 最適なパラメータをDBに保存
         await this.marketCurrenciesRepository.updateTerms(marketCurrency.market_id, marketCurrency.currency_id, bestShortWindow, bestLongWindow);
-        console.log(`最大利益: ${bestProfit.toFixed(2)}`);
-        console.log(`短期: ${bestShortWindow}分, 長期: ${bestLongWindow}分`);
+        // 銘柄情報取得
+        const currency = await this.currenciesRepository.selectByCurrencyId(marketCurrency.currency_id);
+        console.log(`${currency.symbol} | 最大利益: ${bestProfit.toFixed(2)}`);
+        console.log(`${currency.symbol} | 短期: ${bestShortWindow}分, 長期: ${bestLongWindow}分`);
     }
 }

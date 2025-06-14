@@ -8,12 +8,13 @@ from
     inner join marketcurrencies mc 
         ON c.currency_id = mc.currency_id 
 WHERE
-    mc.cross_status = "dead"; 
+    mc.cross_status = "golden"; 
 
 -- 損得割合取得
 SELECT
     t.market_id
     , t.currency_id
+    , c.symbol
     , AVG( 
         CASE 
             WHEN t.transaction_type = 'SELL' 
@@ -47,7 +48,7 @@ FROM
     INNER JOIN currencies c 
         ON t.currency_id = c.currency_id 
 WHERE
-    transaction_datetime > "2025-05-22 22:36" 
+    transaction_datetime > "2025-06-07 22:36" 
 GROUP BY
     t.market_id
     , t.currency_id 
@@ -107,6 +108,47 @@ SET
         ELSE mc.percent * ratios.sell_to_buy_quantity_ratio 
         END; 
 
+-- リスクパーセントの更新をSELECTで確認
+SELECT
+    mc.market_id
+    , mc.currency_id
+    , c.symbol
+    , ratios.sell_to_buy_quantity_ratio 
+FROM
+    marketcurrencies mc 
+    JOIN ( 
+        SELECT
+            t.market_id
+            , t.currency_id
+            , ( 
+                AVG( 
+                    CASE 
+                        WHEN t.transaction_type = 'SELL' 
+                            THEN t.price_per_unit 
+                        END
+                ) / NULLIF( 
+                    AVG( 
+                        CASE 
+                            WHEN t.transaction_type = 'BUY' 
+                                THEN t.price_per_unit 
+                            END
+                    ) 
+                    , 0
+                )
+            ) AS sell_to_buy_quantity_ratio 
+        FROM
+            transactions t 
+        WHERE t.active_flag = 1 
+            AND t.transaction_datetime >= '2025/06/06' 
+        GROUP BY
+            t.market_id
+            , t.currency_id
+    ) AS ratios 
+        ON mc.market_id = ratios.market_id 
+        AND mc.currency_id = ratios.currency_id 
+    INNER JOIN currencies c 
+        ON mc.currency_id = c.currency_id; 
+
 -- 売却・購入の取引結果確認
 select
     t.currency_id
@@ -119,8 +161,7 @@ from
     INNER JOIN currencies c 
         ON t.currency_id = c.currency_id 
 WHERE
-    t.transaction_datetime > "2025-06-6 23:13" 
-    and t.transaction_datetime < "2025-06-7 22:55" 
+    t.transaction_datetime > "2025-06-7 23:13"  -- and t.transaction_datetime < "2025-06-7 22:55"
 GROUP BY
     t.currency_id
     , t.transaction_type 

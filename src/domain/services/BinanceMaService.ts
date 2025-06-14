@@ -188,7 +188,7 @@ export class BinanceMaService extends MaService {
         console.log(`コイン種類: ${currency.symbol}を売却しました。購入量: ${coinAmount} coin、価格: ${currentPrice} bnb/coin、shortMA: ${shortMA}, longMA: ${longMA}、 価格変動率: ${priceChangeData.priceChangePercent}%、価格上昇度：${overBuyPrice}`);
       } else {
         // 移動平均線が交差していない場合は何もしない
-        console.log(`コイン種類: ${currency.symbol}、価格: ${currentPrice} bnb/coin、shortMA: ${shortMA}, longMA: ${longMA}、 価格変動率: ${priceChangeData.priceChangePercent}%、価格上昇度：${overBuyPrice}`);
+        console.log(`${currency.symbol} | ${crossStatus} | 価格: ${currentPrice} bnb/coin、shortMA: ${shortMA}, longMA: ${longMA}、 価格変動率: ${priceChangeData.priceChangePercent}%、価格上昇度：${overBuyPrice}`);
       }
     }
   }
@@ -347,7 +347,7 @@ export class BinanceMaService extends MaService {
         console.log(`コイン種類: ${currency.symbol}を売却しました。購入量: ${coinAmount} coin、価格: ${marketPrice} bnb/coin、shortMA: ${shortMA}, longMA: ${longMA}、 価格変動率: ${priceChangeData.priceChangePercent}%、価格上昇度：${overBuyPrice}`);
       } else {
         // 移動平均線が交差していない場合は何もしない
-        console.log(`コイン種類: ${currency.symbol}。価格: ${marketPrice} bnb/coin、shortMA: ${shortMA}, longMA: ${longMA}、 価格変動率: ${priceChangeData.priceChangePercent}%、価格上昇度：${overBuyPrice}`);
+        console.log(`${currency.symbol} | ${crossStatus} | 価格: ${marketPrice} bnb/coin、shortMA: ${shortMA}, longMA: ${longMA}、 価格変動率: ${priceChangeData.priceChangePercent}%、価格上昇度：${overBuyPrice}`);
       }
     }
   }

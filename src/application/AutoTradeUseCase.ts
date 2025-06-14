@@ -5,6 +5,7 @@ import { CurrenciesRepository } from "../repository/CurrenciesRepository";
 import { CoincheckRetryTradeService } from "../domain/services/CoincheckRetryTradeService";
 import { BinanceMaService } from "../domain/services/BinanceMaService";
 import { BinanceRetryTradeService } from "../domain/services/BinanceRetryTradeService";
+import { errorLogger } from "../infrastructure/logger/ErrorLogger";
 
 /**
  * 自動売買戦略を管理するユースケース
@@ -62,7 +63,7 @@ export class AutoTradeUseCase {
           currencies.find((currency) => currency.symbol == coincheckMaService.coinName)!
         );
       } catch (error) {
-        console.log(error);
+        errorLogger.error(error);
       }
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
@@ -81,7 +82,7 @@ export class AutoTradeUseCase {
           currencies.find((currency) => currency.symbol == binanceMaService.coinName)!
         );
       } catch (error) {
-        console.log(error);
+        errorLogger.error(error);
       }
       await new Promise(resolve => setTimeout(resolve, 1000));
     }

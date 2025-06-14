@@ -31,6 +31,8 @@
     "dotenv": "^16.5.0",
     "hono": "^4.7.9",
     "mysql2": "^3.14.1",
-    "node-cron": "^4.0.5"
+    "node-cron": "^4.0.5",
+    "node-windows": "^1.0.0-beta.8",
+    "winston": "^3.17.0"
   }
 }

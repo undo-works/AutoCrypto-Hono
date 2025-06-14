@@ -1,6 +1,7 @@
 import { ResultSetHeader } from "mysql2";
 import { query } from "./mysql";
 import { MarketCurrenciesEntity } from "../entity/MarketCurrenciesEntity";
+import { errorLogger } from "../infrastructure/logger/ErrorLogger";
 
 /**
  * 価格履歴テーブル用のリポジトリ
@@ -23,7 +24,7 @@ export class MarketCurrenciesRepository {
         [marketId, currencyId, crossStatus]
       );
     } catch (err) {
-      console.log(err);
+      errorLogger.error(err);
       throw new Error("価格履歴の追加に失敗しました");
     }
   }
@@ -77,7 +78,7 @@ SET
         []
       );
     } catch (err) {
-      console.log(err);
+      errorLogger.error(err);
       throw new Error("市場銘柄の購入可能パーセントの更新に失敗しました");
     }
   }
@@ -96,7 +97,7 @@ SET
       );
       return rows;
     } catch (err) {
-      console.log(err);
+      errorLogger.error(err);
       throw new Error("市場銘柄の取得に失敗しました");
     }
   }
@@ -115,7 +116,7 @@ SET
       );
       return rows;
     } catch (err) {
-      console.log(err);
+      errorLogger.error(err);
       throw new Error("市場銘柄の取得に失敗しました");
     }
   }
@@ -142,7 +143,7 @@ SET
       }
       return rows[0];
     } catch (err) {
-      console.log(err);
+      errorLogger.error(err);
       throw new Error("価格履歴の取得に失敗しました");
     }
   }
@@ -166,7 +167,7 @@ SET
       );
       return rows.length > 0 ? rows[0].cross_status as "golden" | "dead" | null : null;
     } catch (err) {
-      console.log(err);
+      errorLogger.error(err);
       throw new Error("価格履歴の取得に失敗しました");
     }
   }
@@ -192,7 +193,7 @@ SET
         [shortTerm, longTerm, marketId, currencyId]
       );
     } catch (err) {
-      console.log(err);
+      errorLogger.error(err);
       throw new Error("short_termとlong_termの更新に失敗しました");
     }
   }

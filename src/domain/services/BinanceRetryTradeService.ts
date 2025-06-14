@@ -2,6 +2,8 @@ import { BINANCE_TRADE_CONFIG } from "../../constants";
 import { BinanceClient } from "../../infrastructure/api/BinanceClient";
 import { CoinCheckClient } from "../../infrastructure/api/CoinCheckClient";
 import { CoincheckCoinType } from "../../infrastructure/api/types/CoinTypes";
+import { errorLogger } from "../../infrastructure/logger/ErrorLogger";
+import { autoTradeLogger } from "../../infrastructure/logger/AutoTradeLogger";
 import { CurrenciesRepository } from "../../repository/CurrenciesRepository";
 import { MarketCurrenciesRepository } from "../../repository/MarketCurrenciesRepository";
 import { TransactionsRepository } from "../../repository/TransactionsRepository";
@@ -43,23 +45,23 @@ export class BinanceRetryTradeService {
         // 現在の価格を取得;
         const currentPrice = await this.binanceClient.getCurrentPrice(order.symbol);
         if (order.price == currentPrice) {
-          console.log(`現在価格と注文価格が一致しているため、再トレードを実行しません。コイン：${order.symbol}|${order.price}、注文日時： ${order.time}、現在価格: ${currentPrice}、注文時価: ${order.price}`);
+          autoTradeLogger.info(`現在価格と注文価格が一致しているため、再トレードを実行しません。コイン：${order.symbol}|${order.price}、注文日時： ${order.time}、現在価格: ${currentPrice}、注文時価: ${order.price}`);
           continue;
         }
         // まずは注文をキャンセル
         const deleteResult = await this.binanceClient.cancelOrder(order.symbol, order.orderId);
         if (deleteResult.success === false) {
-          console.error('オープンオーダーのキャンセルに失敗しました', deleteResult);
+          errorLogger.error('オープンオーダーのキャンセルに失敗しました', deleteResult);
           continue;
         }
         if (order.executedQty > 0) {
           // 約定済みの注文量がある場合、取引履歴を更新
           await this.transactionsRepository.updateQuantity(order.orderId, order.executedQty);
-          console.log(`約定済みの注文量を更新: ${order.symbol}|${order.side}|約定済み量: ${order.executedQty}|元の注文量: ${order.origQty}`);
+          autoTradeLogger.info(`約定済みの注文量を更新: ${order.symbol}|${order.side}|約定済み量: ${order.executedQty}|元の注文量: ${order.origQty}`);
         } else {
           // 約定済みの注文量がない場合、アクティブフラグを0にする
           await this.transactionsRepository.updateActiveFlag(order.orderId, 0);
-          console.log(`アクティブフラグを0に更新: ${order.symbol}|${order.side}|約定済み量: ${order.executedQty}|元の注文量: ${order.origQty}`);
+          autoTradeLogger.info(`アクティブフラグを0に更新: ${order.symbol}|${order.side}|約定済み量: ${order.executedQty}|元の注文量: ${order.origQty}`);
         }
         // 注文キャンセル後、1秒待機
         // await new Promise(resolve => setTimeout(resolve, 1000));
@@ -80,12 +82,12 @@ export class BinanceRetryTradeService {
         }
         const decimals = (tradeConfig!.stepSize.toString().split('.')[1] || '').length;
         orderQuantity = Math.floor(orderQuantity * Math.pow(10, decimals)) / Math.pow(10, decimals);
-        console.log(`調整後の購入量: ${orderQuantity} coin | decimals: ${decimals}`);
+        autoTradeLogger.info(`調整後の購入量: ${orderQuantity} coin | decimals: ${decimals}`);
 
         // 銘柄情報を取得
         const currency = await this.currenciesRepository.selectBySymbol(order.symbol);
         if (orderQuantity <= (tradeConfig?.minNotional ?? 0)) {
-          console.log(`再トレードの量が${tradeConfig?.minNotional ?? 0}以下になったため、再トレードをスキップします。コイン：${order.symbol}|注文量: ${orderQuantity}|BNB残高: ${bnbBalance}|現在価格: ${currentPrice}`);
+          autoTradeLogger.info(`再トレードの量が${tradeConfig?.minNotional ?? 0}以下になったため、再トレードをスキップします。コイン：${order.symbol}|注文量: ${orderQuantity}|BNB残高: ${bnbBalance}|現在価格: ${currentPrice}`);
           const marketCurrenciesRepository = new MarketCurrenciesRepository();
           // クロスフラグをnullに設定
           await marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency.currency_id, null);
@@ -106,14 +108,14 @@ export class BinanceRetryTradeService {
           // price per unit(コインの価格) -> 反転した価格(coin/bnb)
           // total amount -> BNBの量を渡せばよい
           await this.transactionsRepository.insertTransaction(marketId, currency.currency_id, order.side, orderQuantity / currentPrice, reversePrice, orderQuantity, orderResult.orderId);
-          console.log(`再トレード実行: ${order.symbol}|${order.side}|約定済み量: ${order.executedQty}|元の注文量: ${order.origQty}|価格: ${currentPrice}`);
+          autoTradeLogger.info(`再トレード実行: ${order.symbol}|${order.side}|約定済み量: ${order.executedQty}|元の注文量: ${order.origQty}|価格: ${currentPrice}`);
         } else {
           await this.transactionsRepository.insertTransaction(marketId, currency.currency_id, order.side, orderQuantity, currentPrice, currentPrice * orderQuantity, orderResult.orderId);
-          console.log(`再トレード実行: ${order.symbol}|${order.side}|約定済み量: ${order.executedQty}|元の注文量: ${order.origQty}|価格: ${currentPrice}`);
+          autoTradeLogger.info(`再トレード実行: ${order.symbol}|${order.side}|約定済み量: ${order.executedQty}|元の注文量: ${order.origQty}|価格: ${currentPrice}`);
         }
 
       } catch (error) {
-        console.error('再トレードの実行に失敗しました', error);
+        errorLogger.error('再トレードの実行に失敗しました', error);
       }
     };
   }

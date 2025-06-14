@@ -1,5 +1,6 @@
 import { ResultSetHeader } from "mysql2";
 import { query } from "./mysql";
+import { errorLogger } from "../infrastructure/logger/ErrorLogger";
 
 /**
  * 価格履歴テーブル用のリポジトリ
@@ -26,7 +27,7 @@ export class MarketPricesRepository {
         throw new Error("価格履歴の追加に失敗しました");
       }
     } catch (err) {
-      console.log(err);
+      errorLogger.error(err);
       throw new Error("価格履歴の追加に失敗しました");
     }
   }
@@ -54,7 +55,7 @@ export class MarketPricesRepository {
       );
       return rows.map(row => Number(row.price));
     } catch (err) {
-      console.log(err);
+      errorLogger.error(err);
       throw new Error("価格履歴の取得に失敗しました");
     }
   }
@@ -79,7 +80,7 @@ export class MarketPricesRepository {
       );
       return rows.map((row) => Number(row.price));
     } catch (err) {
-      console.log(err);
+      errorLogger.error(err);
       throw new Error("価格履歴の取得に失敗しました");
     }
   }

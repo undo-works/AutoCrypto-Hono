@@ -3,6 +3,7 @@ import { CoincheckCoinType } from "../../infrastructure/api/types/CoinTypes";
 import * as dotenv from "dotenv";
 import { MaService } from "./MaService";
 import { CoincheckTradeConfig } from "../types/CoincheckTradeConfig";
+import { autoTradeLogger } from "../../infrastructure/logger/AutoTradeLogger";
 dotenv.config();
 
 /**
@@ -43,7 +44,7 @@ export class CoincheckMaService extends MaService {
         const openOrders = await this.client.getOpenOrders();
         const sellingOrder = openOrders.orders.filter(order => order.pair === currency.symbol && order.order_type == "buy")
         if (sellingOrder.length > 0) {
-          console.log(`CoincheckMaServiceクラス → コイン種類: ${currency.symbol}はすでに買っているのでスルー`);
+          autoTradeLogger.info(`CoincheckMaServiceクラス → コイン種類: ${currency.symbol}はすでに買っているのでスルー`);
           return;
         }
         // 購入量を計算
@@ -105,7 +106,7 @@ export class CoincheckMaService extends MaService {
         await this.marketCurrenciesRepository.upsertMarketCurrencies(marketId, currency?.currency_id, "dead");
       } else {
         // 移動平均線が交差していない場合は何もしない
-        console.log(`CoincheckMaServiceクラス → コイン種類: ${currency.symbol}|${crossStatus} 現在の価格: ${currentPrice}、短期MA：${shortMA}、長期MA：${longMA} - 交差なし`);
+        autoTradeLogger.info(`CoincheckMaServiceクラス → コイン種類: ${currency.symbol}|${crossStatus} 現在の価格: ${currentPrice}、短期MA：${shortMA}、長期MA：${longMA} - 交差なし`);
       }
     }
   }

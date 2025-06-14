@@ -1,4 +1,5 @@
 import { MarketCurrenciesEntity } from "../../entity/MarketCurrenciesEntity";
+import { updateConfigLogger } from "../../infrastructure/logger/UpdateConfigLogger";
 import { CurrenciesRepository } from "../../repository/CurrenciesRepository";
 import { MarketCurrenciesRepository } from "../../repository/MarketCurrenciesRepository";
 import { MarketPricesRepository } from "../../repository/MarketPricesRepository";
@@ -129,14 +130,14 @@ export class VerifyMaIntervalService {
         }
         // 最適な組み合わせが見つからなかった場合
         if (bestShortWindow === null || bestLongWindow === null) {
-            console.log("最適な期間が見つかりませんでした。");
+            updateConfigLogger.info("最適な期間が見つかりませんでした。");
             return;
         }
         // 最適なパラメータをDBに保存
         await this.marketCurrenciesRepository.updateTerms(marketCurrency.market_id, marketCurrency.currency_id, bestShortWindow, bestLongWindow);
         // 銘柄情報取得
         const currency = await this.currenciesRepository.selectByCurrencyId(marketCurrency.currency_id);
-        console.log(`${currency.symbol} | 最大利益: ${bestProfit.toFixed(2)}`);
-        console.log(`${currency.symbol} | 短期: ${bestShortWindow}分, 長期: ${bestLongWindow}分`);
+        updateConfigLogger.info(`${currency.symbol} | 最大利益: ${bestProfit.toFixed(2)}`);
+        updateConfigLogger.info(`${currency.symbol} | 短期: ${bestShortWindow}分, 長期: ${bestLongWindow}分`);
     }
 }

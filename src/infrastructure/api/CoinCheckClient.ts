@@ -6,6 +6,8 @@ import { OpenOrdersEntity } from './types/coincheck/OpenOrdersEntity';
 import { DeleteOpenOrderResponse } from './types/coincheck/DeleteOpenOrderResponse';
 import { CoincheckCoinType } from './types/CoinTypes';
 import { ExchangeOrderResponse } from './types/coincheck/ExchangeOrderResponse';
+import { errorLogger } from '../logger/ErrorLogger';
+import { autoTradeLogger } from '../logger/AutoTradeLogger';
 
 type OrderType = 'buy' | 'sell';
 type OrderParams = {
@@ -87,7 +89,7 @@ export class CoinCheckClient {
     } catch (error) {
       // エラー詳細をログ出力
       if (axios.isAxiosError(error)) {
-        console.error('API Error Details:', {
+        errorLogger.error('API Error Details:', {
           status: error.response?.status,
           data: error.response?.data,
           config: error.config
@@ -109,7 +111,7 @@ export class CoinCheckClient {
 
   // 注文作成（取引所方式）
   async createOrder(params: OrderParams): Promise<ExchangeOrderResponse> {
-    console.log(`注文作成: ${params.pair} ${params.order_type} ${params.amount} ${params.rate}`);
+    autoTradeLogger.info(`注文作成: ${params.pair} ${params.order_type} ${params.amount} ${params.rate}`);
     return this.request<ExchangeOrderResponse>('POST', '/exchange/orders', params);
   }
 

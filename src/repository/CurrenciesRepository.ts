@@ -1,4 +1,5 @@
 import { CurrenciesEntity } from "../entity/CurrenciesEntity";
+import { errorLogger } from "../infrastructure/logger/ErrorLogger";
 import { query } from "./mysql";
 
 /**
@@ -18,7 +19,7 @@ export class CurrenciesRepository {
       );
       return results;
     } catch (err) {
-      console.log(err);
+      errorLogger.error(err);
       throw new Error("銘柄名から情報を取得することができませんでした");
     }
   }
@@ -36,7 +37,7 @@ export class CurrenciesRepository {
       );
       return results[0];
     } catch (err) {
-      console.log(err);
+      errorLogger.error(err);
       throw new Error("銘柄名から情報を取得することができませんでした");
     }
   }
@@ -54,7 +55,7 @@ export class CurrenciesRepository {
       );
       return results[0];
     } catch (err) {
-      console.log(err);
+      errorLogger.error(err);
       throw new Error("シンボルから情報を取得することができませんでした");
     }
   }

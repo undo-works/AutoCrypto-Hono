@@ -6,6 +6,7 @@ import { BinanceAccountResponse } from './types/binance/BinanceAccountResponse';
 import { Binance24hrTickerResponse } from './types/binance/Binance24hrTickerResponse';
 import { BinanceMyTradeResponse } from './types/binance/BinanceMyTradeResponse';
 import { BinanceOrderCreateResponse } from './types/binance/BinanceOrderCreateResponse';
+import { autoTradeLogger } from '../logger/AutoTradeLogger';
 
 
 
@@ -55,7 +56,7 @@ export class BinanceClient {
     quantity: number,
     price: number
   ) {
-    console.log(`注文作成: ${symbol} ${side} ${quantity} ${price}`);
+    autoTradeLogger.info(`注文作成: ${symbol} ${side} ${quantity} ${price}`);
     const path = '/api/v3/order';
 
     // Binanceサーバー時刻を取得して補正
@@ -190,7 +191,7 @@ export class BinanceClient {
    * @returns 資産の総額（BNB換算）
    */
   async getTotalBalanceInBNB(): Promise<number> {
-    console.log('口座情報を取得中...');
+    autoTradeLogger.info('口座情報を取得中...');
     // 口座情報取得
     const path = '/api/v3/account';
     const serverTimeRes = await this.axiosInstance.get<{ serverTime: number }>('/api/v3/time');

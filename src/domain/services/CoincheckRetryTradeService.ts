@@ -1,5 +1,7 @@
 import { CoinCheckClient } from "../../infrastructure/api/CoinCheckClient";
 import { CoincheckCoinType } from "../../infrastructure/api/types/CoinTypes";
+import { errorLogger } from "../../infrastructure/logger/ErrorLogger";
+import { autoTradeLogger } from "../../infrastructure/logger/AutoTradeLogger";
 import { MaService } from "./MaService";
 
 
@@ -26,7 +28,7 @@ export class CoincheckRetryTradeService {
   async execute(): Promise<void> {
     const openOrders = await this.client.getOpenOrders();
     if (openOrders.success === false) {
-      console.error('オープンオーダーの取得に失敗しました');
+      errorLogger.error('オープンオーダーの取得に失敗しました');
       return;
     }
     for (const order of openOrders.orders) {
@@ -35,13 +37,13 @@ export class CoincheckRetryTradeService {
         const pairWithoutJpy = order.pair.replace(/_jpy$/i, '');
         const currentPrice = await this.client.getCurrentPrice(pairWithoutJpy as CoincheckCoinType);
         if (order.rate == currentPrice) {
-          console.log(`現在価格と注文価格が一致しているため、再トレードを実行しません。コイン：${order.pair}|${order.order_type}、注文日時： ${order.created_at}、現在価格: ${currentPrice}、注文時価: ${order.rate}`);
+          autoTradeLogger.info(`現在価格と注文価格が一致しているため、再トレードを実行しません。コイン：${order.pair}|${order.order_type}、注文日時： ${order.created_at}、現在価格: ${currentPrice}、注文時価: ${order.rate}`);
           continue;
         }
         // まずは注文をキャンセル
         const deleteResult = await this.client.deleteOpenOrder(order.id);
         if (deleteResult.success === false) {
-          console.error('オープンオーダーのキャンセルに失敗しました', deleteResult);
+          errorLogger.error('オープンオーダーのキャンセルに失敗しました', deleteResult);
           continue;
         }
         // 注文キャンセル後、1秒待機
@@ -55,9 +57,9 @@ export class CoincheckRetryTradeService {
           order_type: order.order_type,
           pair: order.pair
         });
-        console.log(`再トレード実行: ${order.pair}${order.created_at}`);
+        autoTradeLogger.info(`再トレード実行: ${order.pair}${order.created_at}`);
       } catch (error) {
-        console.error('再トレードの実行に失敗しました', error);
+        errorLogger.error('再トレードの実行に失敗しました', error);
       }
     };
   }

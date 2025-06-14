@@ -1,5 +1,6 @@
 import { ResultSetHeader } from "mysql2";
 import { query } from "./mysql";
+import { errorLogger } from "../infrastructure/logger/ErrorLogger";
 
 
 /**
@@ -44,7 +45,7 @@ export class TransactionsRepository {
         throw new Error("取引履歴の追加に失敗しました");
       }
     } catch (err) {
-      console.log(err);
+      errorLogger.error(err);
       throw new Error("取引履歴の追加に失敗しました");
     }
   }
@@ -68,7 +69,7 @@ export class TransactionsRepository {
         throw new Error("アクティブフラグの更新に失敗しました");
       }
     } catch (err) {
-      console.log(err);
+      errorLogger.error(err);
       throw new Error("アクティブフラグの更新に失敗しました");
     }
   }
@@ -92,7 +93,7 @@ export class TransactionsRepository {
         throw new Error("取引量の更新に失敗しました");
       }
     } catch (err) {
-      console.log(err);
+      errorLogger.error(err);
       throw new Error("取引量の更新に失敗しました");
     }
   }

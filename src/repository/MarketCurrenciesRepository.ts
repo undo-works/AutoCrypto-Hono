@@ -197,4 +197,27 @@ SET
       throw new Error("short_termとlong_termの更新に失敗しました");
     }
   }
+
+  /**
+   * percentの更新
+   * @param marketId マーケットID
+   * @param currencyId 通貨ID
+   * @param percent 購入可能パーセント
+   */
+  async updatePercent(
+    marketCurrencyId: number,
+    percent: number
+  ): Promise<void> {
+    try {
+      await query<ResultSetHeader>(
+        `UPDATE MarketCurrencies
+         SET percent = ?
+         WHERE active_flag = 1 AND market_currency_id = ?;`,
+        [percent, marketCurrencyId]
+      );
+    } catch (err) {
+      errorLogger.error(err);
+      throw new Error("percentの更新に失敗しました");
+    }
+  }
 }

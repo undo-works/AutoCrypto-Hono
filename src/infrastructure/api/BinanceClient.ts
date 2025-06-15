@@ -7,6 +7,7 @@ import { Binance24hrTickerResponse } from './types/binance/Binance24hrTickerResp
 import { BinanceMyTradeResponse } from './types/binance/BinanceMyTradeResponse';
 import { BinanceOrderCreateResponse } from './types/binance/BinanceOrderCreateResponse';
 import { autoTradeLogger } from '../logger/AutoTradeLogger';
+import { BinanceCoinType } from './types/CoinTypes';
 
 
 
@@ -17,9 +18,9 @@ export class BinanceClient {
   constructor(
     private apiKey: string,
     private apiSecret: string
-  ) {}
+  ) { }
 
-    // axiosインスタンスを事前設定
+  // axiosインスタンスを事前設定
   private axiosInstance = axios.create({
     baseURL: this.ENDPOINT,
     headers: {
@@ -33,7 +34,7 @@ export class BinanceClient {
    * @returns 
    */
   async getCurrentPrice(symbol: string): Promise<number> {
-    const res = await this.axiosInstance.get<{symbol: string, price: string}[]>(`/api/v3/ticker/price`);
+    const res = await this.axiosInstance.get<{ symbol: string, price: string }[]>(`/api/v3/ticker/price`);
     const ticker = res.data.find(t => t.symbol === symbol);
     if (!ticker) {
       throw new Error(`現在価格の取得に失敗しました: ${symbol}`);
@@ -94,9 +95,9 @@ export class BinanceClient {
     const res = await this.axiosInstance.get(
       `${path}?${params}&signature=${signature}`,
       {
-      headers: {
-        'X-MBX-APIKEY': this.apiKey
-      }
+        headers: {
+          'X-MBX-APIKEY': this.apiKey
+        }
       }
     );
     return res.data;
@@ -141,7 +142,7 @@ export class BinanceClient {
         }
       }
     );
-    
+
     const balance = res.data.balances.find(b => b.asset === coinName);
     if (!balance) {
       throw new Error(`${coinName}の残高が見つかりません`);
@@ -269,6 +270,38 @@ export class BinanceClient {
         }
       }
     );
+    return res.data;
+  }
+
+  /**
+   * 指定した銘柄の直近72時間での取引による損益を取得
+   * @param symbol 
+   * @returns 損益（約定価格ベース, 手数料考慮なし, 買いはマイナス・売りはプラス）
+   */
+  async getProfitLossLast72h(symbol: BinanceCoinType): Promise<BinanceMyTradeResponse[]> {
+    // 72時間前のタイムスタンプ(ms)
+    const now = Date.now();
+    const since = now - 72 * 60 * 60 * 1000;
+
+    // 取引履歴を取得（最大1000件ずつ）
+    let fromId: number | undefined = undefined;
+
+    // パラメータ組み立て
+    const path = '/api/v3/myTrades';
+    const serverTimeRes = await this.axiosInstance.get<{ serverTime: number }>('/api/v3/time');
+    const timestamp = serverTimeRes.data.serverTime;
+    let params = `symbol=${symbol}&timestamp=${timestamp}&limit=1000&startTime=${timestamp - 24 * 3 * 60 * 60 * 1000}`;
+
+    const signature = crypto.createHmac('sha256', this.apiSecret).update(params).digest('hex');
+    const res = await this.axiosInstance.get<BinanceMyTradeResponse[]>(
+      `${path}?${params}&signature=${signature}`,
+      {
+        headers: {
+          'X-MBX-APIKEY': this.apiKey
+        }
+      }
+    );
+
     return res.data;
   }
 }

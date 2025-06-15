@@ -63,7 +63,11 @@ export class AutoTradeUseCase {
           currencies.find((currency) => currency.symbol == coincheckMaService.coinName)!
         );
       } catch (error) {
-        errorLogger.error(error);
+        if (error instanceof Error) {
+          errorLogger.error(error.message);
+        } else {
+          errorLogger.error(String(error));
+        }
       }
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
@@ -82,7 +86,11 @@ export class AutoTradeUseCase {
           currencies.find((currency) => currency.symbol == binanceMaService.coinName)!
         );
       } catch (error) {
-        errorLogger.error(error);
+        if (error instanceof Error) {
+          errorLogger.error(error.message);
+        } else {
+          errorLogger.error(String(error));
+        }
       }
       await new Promise(resolve => setTimeout(resolve, 1000));
     }

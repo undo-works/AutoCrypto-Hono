@@ -26,8 +26,12 @@ export class MarketPricesRepository {
       if (postInfo.affectedRows !== 1) {
         throw new Error("価格履歴の追加に失敗しました");
       }
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("価格履歴の追加に失敗しました");
     }
   }
@@ -54,8 +58,12 @@ export class MarketPricesRepository {
         [marketId, currencyId, limit]
       );
       return rows.map(row => Number(row.price));
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("価格履歴の取得に失敗しました");
     }
   }
@@ -79,8 +87,12 @@ export class MarketPricesRepository {
         [marketId, currencyId] // 必要に応じてIDを変更
       );
       return rows.map((row) => Number(row.price));
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("価格履歴の取得に失敗しました");
     }
   }

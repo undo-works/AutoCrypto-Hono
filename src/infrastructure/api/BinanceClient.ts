@@ -274,9 +274,9 @@ export class BinanceClient {
   }
 
   /**
-   * 指定した銘柄の直近72時間での取引による損益を取得
+   * 指定した銘柄の直近72時間での取引を取得
    * @param symbol 
-   * @returns 損益（約定価格ベース, 手数料考慮なし, 買いはマイナス・売りはプラス）
+   * @returns 
    */
   async getProfitLossLast72h(symbol: BinanceCoinType): Promise<BinanceMyTradeResponse[]> {
     // 72時間前のタイムスタンプ(ms)

@@ -115,7 +115,11 @@ export class BinanceRetryTradeService {
         }
 
       } catch (error) {
-        errorLogger.error('再トレードの実行に失敗しました', error);
+        if (error instanceof Error) {
+          errorLogger.error(error.message);
+        } else {
+          errorLogger.error(String(error));
+        }
       }
     };
   }

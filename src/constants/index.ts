@@ -2,8 +2,7 @@ import { BinanceTradeConfig } from "../domain/types/BinanceTradeConfig";
 import { BinanceCoinType, CoincheckCoinType } from "../infrastructure/api/types/CoinTypes";
 
 export const COIN_TYPES: CoincheckCoinType[] = [
-  "btc",
-  // "eth", "xrp",
+  "btc", "eth", "xrp",
   // "etc", "lsk",  "xem", "bch", "mona", "iost", "enj", "chz", "imx", "shib", "avax", "fnct",
   // "dai", "wbtc", "bril", "bc", "doge", "pepe", "mask", "mana", "grt"
 ];

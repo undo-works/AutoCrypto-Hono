@@ -44,8 +44,12 @@ export class TransactionsRepository {
       if (postInfo.affectedRows !== 1) {
         throw new Error("取引履歴の追加に失敗しました");
       }
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("取引履歴の追加に失敗しました");
     }
   }
@@ -68,8 +72,12 @@ export class TransactionsRepository {
       if (postInfo.affectedRows !== 1) {
         throw new Error("アクティブフラグの更新に失敗しました");
       }
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("アクティブフラグの更新に失敗しました");
     }
   }
@@ -92,8 +100,12 @@ export class TransactionsRepository {
       if (postInfo.affectedRows !== 1) {
         throw new Error("取引量の更新に失敗しました");
       }
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("取引量の更新に失敗しました");
     }
   }

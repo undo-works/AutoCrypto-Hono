@@ -18,8 +18,12 @@ export class CurrenciesRepository {
         []
       );
       return results;
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("銘柄名から情報を取得することができませんでした");
     }
   }
@@ -36,8 +40,12 @@ export class CurrenciesRepository {
         [currencyId]
       );
       return results[0];
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("銘柄名から情報を取得することができませんでした");
     }
   }
@@ -54,8 +62,12 @@ export class CurrenciesRepository {
         [symbol]
       );
       return results[0];
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("シンボルから情報を取得することができませんでした");
     }
   }

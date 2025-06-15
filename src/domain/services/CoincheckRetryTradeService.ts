@@ -59,7 +59,11 @@ export class CoincheckRetryTradeService {
         });
         autoTradeLogger.info(`再トレード実行: ${order.pair}${order.created_at}`);
       } catch (error) {
-        errorLogger.error('再トレードの実行に失敗しました', error);
+        if (error instanceof Error) {
+          errorLogger.error(error.message);
+        } else {
+          errorLogger.error(String(error));
+        }
       }
     };
   }

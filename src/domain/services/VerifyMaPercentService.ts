@@ -75,7 +75,11 @@ export class VerifyMaPercentService {
         await this.marketCurrenciesRepository.updatePercent(marketCurrency?.market_currency_id, newPercent);
 
       } catch (error: any) {
-        errorLogger.error(`銘柄: ${symbol} の取引結果取得に失敗しました`, error.message);
+        if (error instanceof Error) {
+          errorLogger.error(error.message);
+        } else {
+          errorLogger.error(String(error));
+        }
         console.error(`取引結果取得に失敗しました`, error);
       }
     }

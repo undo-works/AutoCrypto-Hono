@@ -23,8 +23,12 @@ export class MarketCurrenciesRepository {
          ON DUPLICATE KEY UPDATE cross_status = VALUES(cross_status);`,
         [marketId, currencyId, crossStatus]
       );
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("価格履歴の追加に失敗しました");
     }
   }
@@ -77,8 +81,12 @@ SET
         END;`,
         []
       );
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("市場銘柄の購入可能パーセントの更新に失敗しました");
     }
   }
@@ -96,8 +104,12 @@ SET
         []
       );
       return rows;
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("市場銘柄の取得に失敗しました");
     }
   }
@@ -115,8 +127,12 @@ SET
         [marketId]
       );
       return rows;
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("市場銘柄の取得に失敗しました");
     }
   }
@@ -142,8 +158,12 @@ SET
         throw new Error("指定された市場銘柄が存在しません");
       }
       return rows[0];
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("価格履歴の取得に失敗しました");
     }
   }
@@ -166,8 +186,12 @@ SET
         [marketId, currencyId]
       );
       return rows.length > 0 ? rows[0].cross_status as "golden" | "dead" | null : null;
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("価格履歴の取得に失敗しました");
     }
   }
@@ -192,8 +216,12 @@ SET
          WHERE active_flag = 1 AND market_id = ? AND currency_id = ?;`,
         [shortTerm, longTerm, marketId, currencyId]
       );
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("short_termとlong_termの更新に失敗しました");
     }
   }
@@ -215,8 +243,12 @@ SET
          WHERE active_flag = 1 AND market_currency_id = ?;`,
         [percent, marketCurrencyId]
       );
-    } catch (err) {
-      errorLogger.error(err);
+    } catch (error) {
+      if (error instanceof Error) {
+        errorLogger.error(error.message);
+      } else {
+        errorLogger.error(String(error));
+      }
       throw new Error("percentの更新に失敗しました");
     }
   }
